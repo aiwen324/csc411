@@ -15,10 +15,14 @@ import urllib
 # act = list(set([a.split("\t")[0] for a in open("facescrub_actresses.txt").readlines()]))
 
 # actors for the first several parts
+male_actors = ['baldwin', 'hader', 'radcliffe', 'butler', 'vartan', 'carell']
+actresses = ['bracco', 'chenoweth', 'drescher', 'ferrera', 'gilpin', 'harmon']
 act1 = ['Peri Gilpin', 'Angie Harmon']
 act2 = ['Alec Baldwin', 'Bill Hader', 'Steve Carell']
 test_actress = ['Lorraine Bracco']
-
+act3_male = ['Daniel Radcliffe', 'Gerard Butler', 'Michael Vartan']
+act4_female = ['Kristin Chenoweth', 'Fran Drescher', 'America Ferrera']
+act5 = ['Daniel Radcliffe', 'Gerard Butler', 'Michael Vartan', 'Kristin Chenoweth', 'Fran Drescher', 'America Ferrera']
 
 def timeout(func, args=(), kwargs={}, timeout_duration=1, default=None):
     '''From:
@@ -77,7 +81,7 @@ for a in test_actress:
 
 """
 # Parse actress
-for a in act1:
+for a in act4_female:
     # Parsing Lorraine Bracco
     name = a.split()[1].lower()
     if not os.path.exists("uncropped/"+name) or not os.path.isdir("uncropped/"+name):
@@ -102,7 +106,7 @@ for a in act1:
     f.close()
 
 # Parse actors
-for a in act2:
+for a in act3_male:
     # Parsing Lorraine Bracco
     name = a.split()[1].lower()
     if not os.path.exists("uncropped/"+name) or not os.path.isdir("uncropped/"+name):
