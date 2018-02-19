@@ -1,0 +1,429 @@
+\documentclass[10pt]{article}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{fullpage}
+\usepackage{comment}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{enumitem}
+\usepackage{scrextend}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage[margin=.5in]{geometry}
+\usepackage{paracol}
+\usepackage{kantlipsum}
+\usepackage{tikz}
+\usetikzlibrary{shapes, arrows}
+\usepackage{fixltx2e}
+
+\newcommand{\iimplies}{\mbox{ IMPLIES }}
+\newcommand{\oor}{\mbox{ OR }}
+\newcommand{\aand}{\mbox{ AND }}
+\newcommand{\nnot}{\mbox{ NOT }}
+\newcommand{\iiff}{\mbox{ IFF }}
+\newcommand{\xxor}{\mbox{ XOR }}
+%\newcommand{\algorithmicbreak}{\textbf{break}}
+%\newcommand{\Break}{\State \algorithmicbreak}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{corollary}{Corollary}[theorem]
+\newtheorem{lemma}[theorem]{Lemma}
+
+\MakeRobust{\Call}
+
+\begin{document}
+
+\begin{center}
+{\bf \Large \bf CSC373H Assignment 2}
+\end{center}
+
+\noindent
+Yibin Zhao, 1002996261\\
+\noindent
+Boting Li, 1002407497\\
+\noindent
+Yuesheng Li, 1002112064\\
+
+\subsection*{1. Sub-Palindromes} 
+  To find the length of longest palindromic subsequence in a sequence, we can
+  reverse the sequence, and find common subset between these two by method
+  similiar to sequence alignment.
+  Let x be the sequence and denote reversed sequence to be y.Let $x_0$ and $y_0$
+  be NULL character,$x_{1,i}$ and $y_{1,j}$ be the actual sequence.
+
+  Since we take only matched character out to form a new sequence,the gap and
+  mismatch between each pair of character that can form palinedromic does not
+  matter, the size of palinedromic only depends on how many characters can be
+  paired.
+
+  Def. OPT(i,j)= max length of matched character between $x_{0,i}$ and $y_{0,j}$.
+
+  Case 1: $x_i==y_i$
+
+  length of longest palinedromic subsequence= max palinedromic subsequence length
+  before these two character + 1  
+
+  Case 2: $x_i!=y_j$
+
+  $x_i$!=$y_j$, so length won't change at this index. However $x_i$ can be equal
+  to $y_{j-1}$, or $x_i-1$ equals to $y_j$, so the length of longest palinedromic
+  depends on length of these two sub-sequence.So we can compare sequence
+  $x_{0,i}$ and $y_{0,j-1}$, $x_{0,i-1}$ and $y_{0,j}$, and choose the max length
+  from these two to be the longest palinedromic for OPT(i,j)
+
+
+
+\[
+	OPT(i,j)=\left \{
+		\begin{tabular}{ccc}
+			OPT(i-1,j-1)+1 \hfill if $x_i$==$y_j$\\
+			max\bigg(OPT(i,j-1),OPT(i-1,j)\bigg) \hfill else\\
+		\end{tabular}
+	\right \}
+\]
+
+
+Time complexity = reverse sequence:$O(n)$+build
+matrix:$O(n^2)$+find maximum by traverse matrix:$O(n)$ = $O(n^2)$
+
+Space complexity = inverted sequence:$O(n)$+size of the
+matrix:$O(n^2)$ = $O(n^2)$
+
+
+\subsection*{2. Parsing Words}
+\begin{enumerate}[label=(\alph*)]
+  \item
+    \begin{algorithmic}[1]
+      \Function{MaxQuanlity}{$y$}
+        \State $n \gets \mbox{length}(y)$
+        \State $S \gets ()$
+        \State Initialize array $Q$ of size $n+1$ with value $-\infty$
+        \State Initialize array $P$ of size $n+1$ with $P[i] = i$ for all $i$
+        \State $Q[0] \gets 0$
+        \For{$i \gets 1$ to $n$}
+          \For{$j \gets \max(0, i-L)$ up to $i-1$}
+            \State $t \gets Q[j] + \mbox{dict}(y(j+1 \ldots i))$
+            \If{$t > Q[i]$}
+              \State $Q[i] \gets t$
+              \State $P[i] \gets j+1$
+            \EndIf
+          \EndFor
+        \EndFor
+        \State $i \gets n$
+        \While{$i > 0$}
+          \State $s \gets y(P[i] \ldots i)$
+          \State Insert $s$ at the front of $S$
+          \State $i \gets P[i]-1$
+        \EndWhile
+       \State \Return $S$
+      \EndFunction
+    \end{algorithmic}
+
+    The algorithm has the following precondition and postcondition:
+
+    Precondition: $y$ is a sequece of letters with length at least 1. \\
+    Postcondition: The return value is a parse $S$ such that it is a parse of
+    $y$ with the maximum total quality. 
+
+    In order to prove the correctness of this algorithm, first consider the
+    following lemmas:
+
+    \begin{lemma}
+      $Q[i]$ is the maximum total quality of a parse for the sequence $y(1
+      \ldots i)$, for all $i \in \{1, \cdots, n\}$.
+    \end{lemma}
+    \begin{addmargin}[1em]{0em}
+      This can be shown by strong induction on $i$.
+      Let $Pred(i)$ be the predicate of this lemma for $i$.
+
+      Suppose $i \in \{1, \cdots, n\}$ is arbitrary and assume for all $j < i$,
+      we have $Pred(i)$ is true. 
+
+      Consider when $i = 1$. 
+      The only possible parse in this case is $S = (y(1))$.
+      Thus, the maximum total quality is $\mbox{dict}(y(1))$.
+      Consider the algorithm.
+      $j$ could only be 0 in this case. 
+      $Q[i]$ is initialy $-\infty$. 
+      Then $Q[0] + \mbox{dict}(y(j+1, i)) = 0 + \mbox{dict}(y(1)) =
+      \mbox{dict}(y(1))$. 
+      Therefore, $Pred(1)$ holds.
+
+      When $i > 1$, the DP function could be expressed as following:
+      $$Q[i] = \max\{Q[j] + \mbox{dict}(y(j+1 \ldots i))\} \qquad \mbox{for }
+      \max(0, i-L) \leq j \leq i
+      $$
+      Since function dict returns $-\infty$ for any sequence of length
+      greater than $L$, consider any parse $S_i = (s_1, \cdots s_k)$ of $y(1
+      \ldots i)$ with maximum total quality, we have $i(k) \geq i-L+1$. 
+      Therefore, by the DP function above, we guarantee to have the maximum
+      quality in this case.
+      Hence $Pred(i)$ holds. 
+
+      Thus, by induction, the lemma is true.
+    \end{addmargin}
+
+    \begin{lemma}
+      For all $i \in \{1, \cdots, n\}$, there is a parse $S_i = (s_1, \ldots,
+      s_k)$ of $y(1 \ldots i)$ with the maximum total quality, such that $s_k =
+      y(P[i] \ldots i)$
+    \end{lemma}
+
+    \begin{addmargin}[1em]{0em}
+      By the algorithm and lemma 1, we know that, for the last update on $Q[i]$
+      with $j$, $Q[i] = Q[j] + \mbox{dict}(y(j+1 \ldots i))$ is the maximum
+      quality of a parse of $y(1 \ldots i)$. 
+      Thus, there is a parse $S_i = (s_1, \cdots s_k)$ with the maximum quality
+      of $y(1 \ldots i)$ such that $s_k = y(j \ldots i)$. 
+      By the algorithm, $P[i] = j$.
+      Therefore, the statement is true.
+    \end{addmargin}
+
+    Then, by this two lemmas, we know there is a parse $S = (s_1, \cdots s_k)$
+    with the maximum quality of $y$ such that $s_k = y(P[n] \ldots n)$. 
+    Similarly, we can get that there is a parse $S' = (s'_1, \cdots, s'_p)$ of
+    $y(1 \ldots P[n]-1)$ with the maximum quality such that $s'_p = y(P[P[n]-1]
+    \ldots P[n]-1)$. 
+    By exchange arguement, $S'' = (s'_1, \cdots, s'_p, s_k)$ is a parse of $y$
+    with the maximum quality. 
+    Similarly, we can conduct an induction to prove that the algorithm returns
+    a optimal answer $S$. 
+
+
+  \item
+    The run time of this algorithm is $O(Ln) = O(n)$ given that $L$ is a
+    constant. 
+
+    Each initiliazation of an array of size $n+2$ runs in $O(n)$. 
+    
+    The first outer for loop iterates for $n$ times, and in each iteration, the
+    inner for loop runs for at most $L$ times. 
+    Each iteration of the inner for loop runs in constant time, so in total,
+    $O(Ln) = O(n)$ for this for loop. 
+
+    The second for loop iterates for at most $n$ times, and each iteration runs
+    in $O(1)$. Thus, $O(n)$.
+
+    Hence, combine all the run time above, we get $O(Ln) = O(n)$.
+
+\end{enumerate}
+
+
+\subsection*{3. Optimal Parse Trees}
+\begin{enumerate}[label=(\alph*)]
+	\item Given a string $y$, and a sorted listed of break points $d=[d_0, ...,
+    d_k]$, consider the algorithm:\\  
+    \begin{algorithm}
+      \textbf{Algorithm:} Compute\_cost\_table\\
+      \textbf{Input:} $y$, $d=[d_0, ..., d_k]$\\
+      \begin{algorithmic}[1]
+        \State M $\gets$ Matrix[k+1][k+1] \Comment{An empty Matrix of size
+          $(k+1)*(k+1)$}
+        \For{$n = 1$ $\to$ $k$}
+          \For{$i=0$ $\to$ $k-n$}
+            \If{$n =1$}
+              \State $M[i,i+n] \gets d_{i+n} -d_i$
+            \Else
+              \State $m \gets \infty$
+              \For{$\ell= 1 \to n-1$}
+                \If{$m< M[i,i+\ell] + M[i+\ell, i+n]$}
+                  \State $m \gets M[i,i+\ell] + M[i+\ell, i+n]$
+                \EndIf
+              \EndFor
+              \State $M[i, i+n] \gets m+d_{i+n}- d_i$
+            \EndIf
+          \EndFor
+        \EndFor
+        \State \Return M
+      \end{algorithmic}
+      \textbf{Explanation:}
+      \begin{itemize}
+      	\item Only need to compute the upper triangle of the (k+1)*(k+1) matrix M.
+        \item Each entry $M[i,j]$, with $i<j$, contains a min cost function of
+          $v$ with $v.data=(i,j)$. To be a feasible parse tree, any non-leaf
+          $v$'s left and right child must be non-null and a disjoint substring
+          of v with union equal to v. 
+        \item 
+          \begin{tabbing}
+            For simplicity, \=Let $Cost(T_v)$ denote the cost of subtree rooted
+              at $v$.\\
+            \> Let $Cost(v)$ denote the cost of node $v$.\\
+          \end{tabbing}
+          \[Cost(T_v)=\begin{cases}
+            Cost(v)& v \textnormal{ is a leaf}\\
+            Cost(v) + Cost(T_{v.left})  + Cost(T_{v.right}) & v \textnormal{ is
+              a non-leaf}\\ 
+          \end{cases}\]
+        \item Thus, if $v$ is not a leaf, then cost of subtree of v is only
+          depend on how $v$ is separated into left and right child of $v$, and
+          sum of their costs of subtree. To find the minimum, need to minimizing
+          sum of both children's cost of subtree. 
+                
+        \item Thus we get the following:\\
+          Let $C(i,j)$ denote the minimum cost for any subtree rooted at a
+          vertex $v$ which has the data $v.data = (i, j)$.
+
+          \[C(i,j) = \begin{cases}
+            d_j- d_i, & i = j-1\\
+            d_j- d_i + \min_{h\in \{i+1,...,j-1\}}(C(i,h)+(C(h,j)) & j> i+1\\
+          \end{cases}\]
+      \end{itemize}
+    \end{algorithm}
+    \item Consider the algorithm, since all of the single process takes $O(1)$
+      time, only need to consider how many loops the algorithm iterated.\\ 
+      Total number of iterations of the loop is:\\
+      \begin{center}
+        $k + \Sigma_{i=1}^{k-1}(k-i)i$\\
+        $= k +\Sigma_{i=1}^{k-1}(ik-i^2)$\\
+        $= k + k(k-1)(k+1)/6$\\
+        Thus it is in $O(k^3)$
+      \end{center}
+      Thus it is in $O(k^3)$
+ 	  	\begin{center}
+		  	\begin{tabular}{ |c|c|c|c|c| }
+          \hline
+ 			  	0 & 1 & 1 & 2 & 3 \\
+          \hline
+   				0 & 0 & 1 & 1 & 2 \\  
+          \hline
+ 	  			0 & 0 & 0 & 1 & 1 \\
+          \hline
+          0 & 0 & 0 & 0 & 1 \\
+          \hline
+          0 & 0 & 0 & 0 & 0 \\
+          \hline
+		  	\end{tabular}
+  		\end{center}
+      This is example of a matrix with input number indicate the time it takes
+      to find out its value at each iteration. 
+  \item Given the cost table C, can get the minimal cost feasible parse tree as
+    follows: 
+    \begin{enumerate}[label=(\arabic*)]
+    	\item Construct root with node $v$ where $v.data = (0,k)$.
+      \item Then for each node $v$ with $v.data=(i,j)$ in this tree that has no
+        child where $i \neq j-1$, recursively construct as follows:\\ 
+        \begin{enumerate}
+          \item Find the $C[i,j]$, the $(i,j)$-entry of the table. Let $c_{i,j}$
+            be the value of this entry. 
+          \item Find a pair entries $C[i,h], C[h,j]$, with value $c_{i,h},
+            c_{h,j}$ whose sum is $c_{i,j} -(d_j-d_i)$. $h$ ranges in $\{i+1,
+            ..., j-1\}$ 
+          \item Construct the left child of $v$ with $v.left.data=(i,h)$, and
+            Construct the right child of $v$ with $v.right.data=(h,j)$. 
+        \end{enumerate}
+    \end{enumerate}
+    Then the result tree is a minimal cost feasible parse tree.
+\end{enumerate}
+	
+
+\subsection*{Equal Thirds}
+\begin{enumerate}[label=(\alph*)]
+	\item Given a list of strictly positive integer $X=[x_1,...,x_n]$, with $n>0$,
+    consider the algorithm: 
+    \begin{algorithm}
+      \textbf{Algorithm:} Equal\_Third\\
+      \textbf{Input:} $X=[x_1, ..., x_n]$\\
+      \begin{algorithmic}[1]
+        \State $m\gets 0$
+        \For{$\ell=1 \to n$}
+          \State $m += x_\ell$
+        \EndFor
+        \State $m\gets m/3$
+        \If{$m$ is not an integer} 
+          \State \Return False
+        \EndIf
+          \State \Return Has\_a\_partition(X, n, m, m)
+      \end{algorithmic}
+      \textbf{Explanation:}
+      \begin{itemize}
+        \item If sum of integers in $X$ is not divisible by 3, then obviously
+          there is no way to divide into three disjoint sets. 
+        \item Otherwise, throw it to the $Has\_a\_partition()$ function.
+      \end{itemize}
+    \end{algorithm}
+    \begin{algorithm}
+      \textbf{Function:} Has\_a\_partition\\
+      \textbf{Input:} $X=[x_1, ..., x_n], \ell, m_1, m_2$\\
+      For simplicity, use $Hap(X, \ell, m_1, m_2)$ to denote
+      $Has\_a\_partition(X, \ell, m_1, m_2)$\\ 
+      \textbf{Precondition:} $\ell \leq n$, where $n$ is the number of elements in $X$.\\
+      \begin{algorithmic}[1]
+        \If{$m_1 <0 \oor m_2<0$}
+          \State \Return False 
+        \EndIf
+        \If{$\ell==0$}
+          \If{$m_1 \neq 0 \oor m_2 \neq 0$}
+            \State \Return False
+          \Else
+            \State \Return True
+          \EndIf
+        \Else
+          \State \Return $Hap(X,\ell-1, m_1-x_\ell, m_2)$ \oor $Hap(X, \ell-1,
+            m_1, m_2-x_\ell)$ \oor $Hap(X,\ell-1, m_1, m_2)$ 
+        \EndIf
+      \end{algorithmic}
+      \textbf{Explanation:}
+      \begin{itemize}
+        \item $Has\_a\_partition(X, \ell, m_1,m_2)$ function checks if there is
+          a way to partition $X[1:\ell]$ into three pairwise disjoint sets $S_1,
+          S_2, S_3$, with sum of all elements in $S_1$ is $m_1$, sum of all
+          elements in $S_2$ is $m_2$. 
+        \item Note that: If there exist a partition for $X[1:\ell]$, then
+          $x_\ell$ must in one of $S_1, S_2, S_3$, thus can consider if there is
+          a partition for each of the case without $x_\ell$.
+        \item Notice: Obviously, if $m_1, m_2$ is negative, it is impossible to
+          have an partition for any of $X[1:\ell]$. Also, if $\ell$ is zero,
+          unless both $m_1,m_2$ is zero, it's impossible as well.
+      \end{itemize}
+    \end{algorithm}
+    \begin{itemize}
+      \item  Together with explanation of the algorithm and function, we can
+        conclude that the algorithm is correct. Since the function
+        $Has\_a\_partition(X,n,m,m)$ would return if there is a partition of X
+        into 3 pairwise disjoint sets, with each of sum equal one-third of sum
+        of elements in $X$. 
+      \item First notice that function take $O(1)$ time complexity except the
+        recursion part. Then consider the worst case that we need to compute
+        every single $Hap(X,\ell, m_1, m_2)$ where $\ell$ ranges from $0$ to
+        $n$, and $m_1, m_2$ from 0 to one-third of sum of elements in $X$.
+        \textbf{i.e. the brutal force}\\ 
+        \begin{addmargin}[1em]{0em}
+        	Then in total, it is $n*((\Sigma_{i=1}^{n}x_i)/3)^2$, which is in
+          $O(n(\Sigma_{i=1}^{n}x_i)^2)$ time complexity.\\ 
+        \end{addmargin}
+    \end{itemize}
+  \item Suppose the algorithm is also run in $\Omega(n(\Sigma_{i=1}^{n}x_i)^2)$:\\
+    Notice that, $\Theta(\Sigma_{i=1}^{n}x_i) =\Theta(n\max(x_j))$, where $j \in
+    \{1,...,n\}$ \\ 
+    $\implies$ $\Theta((\Sigma_{i=1}^{n}x_i)^2) =
+    \Theta((n\max(x_j))^2)=\Theta(n^2\max(x_j)^2) =\Theta(n^2\max(x_j^2))$\\ 
+    $\implies$ $\Theta(n(\Sigma_{i=1}^{n}x_i)^2) = \Theta(n^3\max(x_j^2))$ which
+    is in polynomial time. \\ 
+  \item Suppose the algorithm in part (a) return True, Can compute the partition
+    recursively as follows:\\ 
+    \begin{enumerate}[label=(\arabic*)]
+    	\item Construct 3 empty set $S_1,S_2,S_3$  with capcity $m_1,m_2,m_3 =
+        m/3$ where $m = \Sigma_{i=1}^{n}x_i$ 
+      \item Notice that, for algorithm $Equal\_Thrid$ it returns True IFF the
+        function $Has\_a\_partition$ returns True.\\ 
+        It is sufficient to consider Only the $Has\_a\_partition$ (or simply $Hap$).\\
+        \\
+        Consider each element of X, can iterate backward from $x_n$ to $x_1$,
+        with $\ell$ denote the index.\\ 
+        \begin{enumerate}
+        	\item For each step $\ell \neq 0$, with $Hap(X, \ell, m_1, m_2)$
+            returns True, the algorithm tells that at least one of
+            $Hap(X,\ell-1, m_1-x_\ell, m_2)$ or $Hap(X, \ell-1, m_1,
+            m_2-x_\ell)$ or $Hap(X,\ell-1, m_1, m_2)$ is true.\\ 
+          \item Pick one of the case that is true as the next step and put
+            $x_\ell$ in corresponding set. \\ 
+            i.e. if $Hap(X,\ell-1, m_1, m_2)$ is true, pick it as next step, and
+            the put $x_\ell$ in $S_3$.\\ 
+          \item Repeat Step A, and B  until $\ell$ reaches 0.
+        \end{enumerate}
+    \end{enumerate}
+\end{enumerate}
+
+
+\end{document}

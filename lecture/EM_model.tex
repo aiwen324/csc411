@@ -1,0 +1,113 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{algorithm}
+\usepackage{algorithmicx}
+\usepackage{algpseudocode}
+\usepackage{amsmath}
+\begin{document}
+\title{EM Model Review}
+\author{Yifei Ai}
+\maketitle
+
+\section{Stats Definition Review}
+
+%---------------- multinomial event model ----------------
+\section{Multinomial Event model}
+
+\paragraph{Introduce}
+
+In this model, we assume the $P(x_i|y)$ is a multinomial distribution rather than Bernoulli distribution. (Notice: Multinomial distribution is not Gaussian Distribution). We still use the same trick to do it, with Laplace smoothing would be have a good model if hte model sample is not too small.
+
+
+\section{Mixtures of Gaussians and the EM algorithm}
+
+\paragraph{Introduce}
+In this model, our dataset is unlabeled, so we should randomly label them first, or randomly generate the $\mu$ and $\sigma$, so that we can keep doing the algorithm.
+
+\begin{algorithm}
+  \begin{algorithmic}
+    \For {each i,j}
+      \State $w_j = p(z^{(i)} = j|x^{(i)}; \phi,\mu,\Sigma)$
+    \EndFor
+    \State $phi_j = \frac{1}{m}\sum_{i=1}^m w_j^{(i)}$
+    \State $\mu_j = \frac{\sum_{i=1}^mw_j^{(i)}x^{(i)}}{\sum_{i=1}^{(i)}w_j^{(i)}}$
+    \State $\Sigma_j = \frac{\sum_{i=1}^mw_j^{(i)}(x^{(i)}-u_j)(x^{(i)}-u_j)^T}{\sum_{i=1}^mw_j^{(i)}}$
+  \end{algorithmic}
+\end{algorithm}
+
+To obtain such equation, let's do the proof of $\mu_j$:
+\begin{align}
+  \mu_j &= \frac{\sum_{i=1}^m1\{z=j\}x^{(i)}}{\sum_{i=1}^m1\{z^{(i)}=j\}}\\
+        &= \frac{\sum_{x\in X}mP(X=x, z=j)x}{mP(z=j)}\\
+        &= \frac{m\sum_{x\in X}P(X=x, z=j)x}{mP(z=j)}\\
+        &= \frac{\sum_{x\in X}P(X=x, z=j)x}{P(z=j)}\\
+        &= \sum_{x\in X}P(X=x|Z=j)x
+\end{align}
+Notice we get the intuitive definition of the mean here, then we transform the equation to our algorithm
+
+Also notice that we have to assume the frequency in data should be somehow agree with the probability. i.e. the number of $X=x$ is $mP(X=x)$, otherwise we can do nothing to the data, so this is some kind of assumption we did to the data.
+
+\begin{align}
+  \mu_j &= \sum_{x\in X}P(X=x|Z=j)x\\
+        &= \frac{\sum_{x\in X}P(X=x, z=j)x}{P(z=j)}\\
+        &= \frac{\sum_{x\in X}P(z=j|X=x)P(X=x)x}{P(z=j)}\\
+        &= \frac{\sum_{x\in X}P(z=j|X=x)mP(X=x)x}{mP(z=j)}\\
+        &= \frac{\sum_{i=1}^mP(z^{(i)}=j|X=x^{(i)})x^{(i)}}{mP(z^{(i)}=j)}\\
+        &= \frac{\sum_{i=1}^mw_jx^{(i)}}{\sum_{i=1}^mw_j}
+\end{align}
+
+%------------------ Gaussian distribution integral--------
+\paragraph{Proof of 1-dimenstional Gaussian distribution integral}
+Notice, we have need following theorem from Multivariate Calculus: Fubini's Theorem, Change of Variable, indeed, we also just going to assume the function is integrable, since it shouold be continuous almost everywhere.
+
+Now, let's do the simplest one, let's do the integral:
+\[
+  \int_{-\infty}^{+\infty}e^{-x^2}dx
+\]
+
+Here is the trick, we apply Fubini's Theorem
+\begin{align}
+  \iint_{R^2}e^{-x^2-y^2} \,dx \,dy &= \int_{y=-\infty}^{y=+\infty}\int_{x=-\infty}^{x=+\infty}e^{-x^2-y^2} \,dx \,dy\\
+                           &= \int_{y=-\infty}^{y=+\infty}\int_{x=-\infty}^{x=+\infty}e^{-x^2}e^{-y^2} \,dx \,dy\\
+                           &= \int_{y=-\infty}^{y=+\infty}(\int_{x=-\infty}^{x=+\infty}e^{-x^2} \,dx)\, e^{-y^2} \,dy\\
+                           &=(\int_{x=-\infty}^{x=+\infty}e^{-x^2} \,dx) (\int_{y=-\infty}^{y=+\infty} e^{-y^2} \,dy)
+\end{align}
+
+Thus we get
+\[
+  (\int_{-\infty}^{+\infty}e^{-x^2}dx)^2 = \iint_{R^2}e^{-x^2-y^2} \,dx \,dy
+\]
+
+Then we change variable:
+\begin{align}
+  x &= Rcos\theta\\
+  y &= Rsin\theta\\
+  (x, y) &= g(R, \theta)\\
+  \frac{\partial g}{\partial (R, \theta)}
+    &= \begin{bmatrix}
+      cos\theta & -Rsin\theta\\
+      sin\theta & Rcos\theta
+      \end{bmatrix}
+\end{align}
+
+Then we apply theorem change of variables:
+\begin{align}
+  \iint_{R^2}e^{-x^2-y^2} \,dx \,dy &= |det Dg|\int_{R=0}^{R=+\infty}\int_{\theta=0}^{\theta=2\pi}e^{-R^2} \,d\theta \,dR\\
+                                    &= 2R\pi \int_{R=0}^{R=+\infty}e^{-R^2} \,dR\\
+                                    &= 2\pi \int_{R=0}^{R=+\infty}Re^{-R^2} \,dR\\
+                                    &= 2\pi \cdot \frac{-1}{2} \int_{R=0}^{R=+\infty}e^{-R^2} \,dR^2\\
+                                    &= (-\pi) \cdot (-1)\\
+                                    &= \pi
+\end{align}
+
+Therefore, we will have
+\[
+  \int_{-\infty}^{+\infty}e^{-x^2}dx = \sqrt{\pi}
+\]
+
+Then, we can just do the change of variable trick again:
+\begin{align}
+  \int_{-\infty}^{+\infty}e^{\frac{-x^2}{2\sigma^2}} \,dx &= \sqrt{2}\sigma \int_{-\infty}^{+\infty}e^{-x^2}d\frac{x}{\sqrt{2}\sigma}\\
+                                                      &= \sqrt{2\pi}\sigma\\
+\end{align}
+\end{document}
