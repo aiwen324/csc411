@@ -40,14 +40,11 @@ def batch_layer_computation(X, W):
 
 
 def part3_cross_entropy(predicts, targets):
-    """predicts and targets are matrices of size MxL, M is the nubmer training
+    """predicts and targets are matrices of size LxM, M is the nubmer training
     cases, L is the number of output units. we should transpose the matrix 
     before we pass the argument""" 
-    total = 0
-    for predict, target in zip(predicts, targets):
-        cost = -np.dot(target.T, np.log(predict))
-        total += cost
-    return total
+    total = -np.sum(np.multiply(np.log(predicts), targets))
+    return np.true_divide(total, predicts.shape[1])
 
 def CE_dWeight(X, Y, T):
     """X is the matrix of training sets with size NxM, N is the number of input
@@ -83,7 +80,6 @@ def initialize_weights(size, epsilon=0.4):
     """ Randomly initialize a matrix """
     W = np.random.rand(size[0], size[1])
     W = W * 2 * epsilon - epsilon
-    print "Initialize Weight as:", W
     return W
 
 def calculate_accuracy(Y, T):
@@ -99,7 +95,36 @@ def calculate_accuracy(Y, T):
     return np.true_divide(correct, total)
 
         
-def gradient_descent(X, T, alpha=0.00001, EPS = 1e-5, max_iter = 600):
+
+def initialize_targets(dataset, set_name, index):
+    """ Initialize the target as a matrix, size is LxM, M is coincident with the
+    matrix of the set_name in dictionary and index informs which index of that array 
+    should be 1 """
+    X = dataset[set_name]
+    M = X.shape[0]
+    T_index = np.zeros((M, 10))
+    T_index[:, index] = 1
+    return np.true_divide(X.T, 255.0), T_index.T
+
+def seperate_train_valid():
+    M = loadmat("mnist_all.mat")
+    X_test = np.empty((784, 0), dtype=np.float)
+    T_test = np.empty((10, 0), dtype=np.int)
+    X_valid = np.empty((784, 0), dtype=np.float)
+    T_valid = np.empty((10, 0), dtype=np.int)
+    for i in range(10):
+        X_test_i, T_test_i = initialize_targets(M, 'test'+str(i), i)
+        num_sets = X_test_i.shape[1]
+        valid_num = int(num_sets*0.2)
+        test_num = num_sets - valid_num
+        X_test = np.hstack((X_test, X_test_i[:,:test_num]))
+        T_test = np.hstack((T_test, T_test_i[:,:test_num]))
+        X_valid = np.hstack((X_valid, X_test_i[:,test_num:]))
+        T_valid = np.hstack((T_valid, T_test_i[:,test_num:]))
+    return X_test, T_test, X_valid, T_valid
+
+
+def gradient_descent(X, T, alpha=0.00001, EPS = 1e-5, max_iter = 300):
     """ X is the matrix of inputs, NxM, N is the number of input units, M is the 
     number of training cases. T is the matrix of results, size: LxM, L is the 
     number of output units """
@@ -111,28 +136,41 @@ def gradient_descent(X, T, alpha=0.00001, EPS = 1e-5, max_iter = 600):
     previous_W = W - 10*EPS
     count = 0
     perform_dict = dict()
+
+    train_performance = np.empty((1, 0), dtype=float)
+    train_cost = np.empty((1, 0), dtype=float)
+    test_performance = np.empty((1, 0), dtype=float)
+    test_cost = np.empty((1, 0), dtype=float)
+    valid_performance = np.empty((1, 0), dtype=float)
+    valid_cost = np.empty((1, 0), dtype=float)
+
+    X_test, T_test, X_valid, T_valid = seperate_train_valid()
+
+    Y_valid = batch_layer_computation(X_valid, W)
+    current_valid_cost = part3_cross_entropy(Y_valid, T_valid)
+    
     while norm(W - previous_W) > EPS and count < max_iter:
         previous_W = W.copy()
         Y = batch_layer_computation(X, W)
+        Y_test = batch_layer_computation(X_test, W)
+        Y_valid = batch_layer_computation(X_valid, W)
+        train_performance = np.append(train_performance, calculate_accuracy(Y, T))
+        test_performance = np.append(test_performance, calculate_accuracy(Y_test, T_test))
+        valid_performance = np.append(valid_performance, calculate_accuracy(Y_valid, T_valid))
+        train_cost = np.append(train_cost, part3_cross_entropy(Y, T))
+        test_cost = np.append(test_cost, part3_cross_entropy(Y_test, T_test))
+        valid_cost = np.append(valid_cost, part3_cross_entropy(Y_valid, T_valid))
         W = W - alpha*CE_dWeight(X, Y, T)
         print "Iter: " , count
         print "Weight: " , W
         print "Cost: " , part3_cross_entropy(Y, T)
         if count % (max_iter/5) == 0:
             print "Accuracy on test set: ", calculate_accuracy(Y, T)
-            perform_dict[count] = (calculate_accuracy(Y, T), W)
+            perform_dict[count] = (calculate_accuracy(Y, T), previous_W)
         count += 1
+    summary = np.array([train_performance, test_performance, valid_performance, train_cost, test_cost, valid_cost])
+    np.save('tmp/part4_summary_data'+str(alpha), summary)
     return W, perform_dict
-
-def initialize_targets(dataset, set_name, index):
-    """ Initialize the target as a matrix, size is LxM, M is coincident with the
-    matrix of the set_name in dictionary and index informs which index of that array 
-    should be 1 """
-    X = dataset[set_name]
-    M = X.shape[0]
-    T_index = np.zeros((M, 10))
-    T_index[:, index] = 1
-    return np.true_divide(X.T, 255), T_index.T
 
 # =================================== Part 1 ===================================
 # M = loadmat("mnist_all.mat")
@@ -168,5 +206,8 @@ for i in range(10):
     X = np.hstack((X, X_i))
     T = np.hstack((T, T_i))
 
+
 # TODO: Combine the data
 # TODO: gradient descent
+
+# ===================================  Part 5 ===================================
