@@ -26,14 +26,15 @@ def layer_computation(x, W, b, act_func=lambda x: x):
     output = softmax(L1)
     return L1, output
 
-def batch_layer_computation(X, W):
+def batch_layer_computation(X, W, b):
     """ X is an input matrix with size NxM, N is the number of input units, M is
-    the number of training cases. W is a weight matrix already append bias vector 
-    with size (N+1)xL, L is the number of output layers. Notice we need extra 
-    one row for bias, so we should append another row vector [1, 1, 1, 1, ... ,1] 
-    to X to do implement the function. """
+    the number of training cases. W is a weight matrix NxL, L is the number of 
+    output layers. Notice we need extra one row for bias, so we should append 
+    another row vector [1, 1, 1, 1, ... ,1] to X to do implement the function. """
     one_array = np.ones(X.shape[1])
     X = np.vstack((X, one_array))
+    print b.shape
+    W = np.vstack((W, b))
     L1 = np.dot(W.T, X)
     Y = softmax(L1)
     return Y
@@ -52,16 +53,19 @@ def CE_dWeight(X, Y, T):
     number of output layers, to make computation convinient, I will use this
     calculate the derivative of bias as well, so would append a row vector ones to
     X"""
-    one_array = np.ones(X.shape[1])
-    X = np.vstack((X, one_array))
     return np.dot(X, (Y-T).T)
+
+def CE_dBias(Y, T):
+    ones_arr = np.ones(Y.shape[1])
+    return np.dot(ones_arr, (Y-T).T)
 
 def approx_CE_dWeight_single(X, W, T, p, q, t):
     """Approximate the derivative of single entry in Jacobian matrix"""
     new_weight = W.copy()
     new_weight[p][q] += t
-    Y = batch_layer_computation(X, W)
-    Y_h = batch_layer_computation(X, new_weight)
+    b = np.zeros(W.shape[1])
+    Y = batch_layer_computation(X, W, b)
+    Y_h = batch_layer_computation(X, new_weight, b)
     df = part3_cross_entropy(Y_h, T) - part3_cross_entropy(Y, T)
     df = np.true_divide(df, t)
     return df
@@ -81,6 +85,10 @@ def initialize_weights(size, epsilon=0.4):
     W = np.random.rand(size[0], size[1])
     W = W * 2 * epsilon - epsilon
     return W
+
+def initialize_bias(size):
+    b = np.zeros(size)
+    return b
 
 def calculate_accuracy(Y, T):
     """ Calculate the performance , Y and T a matrices in size LxM """
@@ -123,54 +131,67 @@ def seperate_train_valid():
         T_valid = np.hstack((T_valid, T_test_i[:,test_num:]))
     return X_test, T_test, X_valid, T_valid
 
+def calculate_data(Y, T, Y_test, T_test, Y_valid, T_valid):
+    train_performance = calculate_accuracy(Y, T)
+    test_performance = calculate_accuracy(Y_test, T_test)
+    valid_performance = calculate_accuracy(Y_valid, T_valid)
+    train_cost = part3_cross_entropy(Y, T)
+    test_cost = part3_cross_entropy(Y_test, T_test)
+    valid_cost = part3_cross_entropy(Y_valid, T_valid)
+    return np.array([train_performance, test_performance, valid_performance, train_cost, test_cost, valid_cost])
 
-def gradient_descent(X, T, alpha=0.00001, EPS = 1e-5, max_iter = 300):
+def gradient_descent(X, T, alpha=0.00001, EPS = 1e-5, max_iter = 300, mu = 0):
     """ X is the matrix of inputs, NxM, N is the number of input units, M is the 
     number of training cases. T is the matrix of results, size: LxM, L is the 
     number of output units """
     # Initialize a weight matrix
     size = [X.shape[0], T.shape[0]]
-    size[0] += 1
-    print "Weight size is:" + str(size)
     W = initialize_weights(size)
+    b = initialize_bias(T.shape[0])
     previous_W = W - 10*EPS
+    previous_b = b - 10*EPS
     count = 0
     perform_dict = dict()
 
-    train_performance = np.empty((1, 0), dtype=float)
-    train_cost = np.empty((1, 0), dtype=float)
-    test_performance = np.empty((1, 0), dtype=float)
-    test_cost = np.empty((1, 0), dtype=float)
-    valid_performance = np.empty((1, 0), dtype=float)
-    valid_cost = np.empty((1, 0), dtype=float)
+    summary = np.empty((6, 0), dtype=float)
 
     X_test, T_test, X_valid, T_valid = seperate_train_valid()
 
-    Y_valid = batch_layer_computation(X_valid, W)
-    current_valid_cost = part3_cross_entropy(Y_valid, T_valid)
+    p = 0
     
-    while norm(W - previous_W) > EPS and count < max_iter:
+    while norm(W - previous_W)+norm(b - previous_b) > EPS and count < max_iter:
         previous_W = W.copy()
-        Y = batch_layer_computation(X, W)
-        Y_test = batch_layer_computation(X_test, W)
-        Y_valid = batch_layer_computation(X_valid, W)
-        train_performance = np.append(train_performance, calculate_accuracy(Y, T))
-        test_performance = np.append(test_performance, calculate_accuracy(Y_test, T_test))
-        valid_performance = np.append(valid_performance, calculate_accuracy(Y_valid, T_valid))
-        train_cost = np.append(train_cost, part3_cross_entropy(Y, T))
-        test_cost = np.append(test_cost, part3_cross_entropy(Y_test, T_test))
-        valid_cost = np.append(valid_cost, part3_cross_entropy(Y_valid, T_valid))
-        W = W - alpha*CE_dWeight(X, Y, T)
+        b = b.copy()
+        Y = batch_layer_computation(X, W, b)
+        Y_test = batch_layer_computation(X_test, W, b)
+        Y_valid = batch_layer_computation(X_valid, W, b)
+        data = calculate_data(Y, T, Y_test, T_test, Y_valid, T_valid)
+        summary = np.hstack((summary, data[:,None]))
+        p = mu*p + alpha*CE_dWeight(X, Y, T)
+        W = W - p
+        b = b - alpha*CE_dBias(Y, T)
         print "Iter: " , count
         print "Weight: " , W
         print "Cost: " , part3_cross_entropy(Y, T)
         if count % (max_iter/5) == 0:
             print "Accuracy on test set: ", calculate_accuracy(Y, T)
-            perform_dict[count] = (calculate_accuracy(Y, T), previous_W)
+            perform_dict[count] = (calculate_accuracy(Y, T), previous_W, previous_b)
         count += 1
-    summary = np.array([train_performance, test_performance, valid_performance, train_cost, test_cost, valid_cost])
-    np.save('tmp/part4_summary_data'+str(alpha), summary)
-    return W, perform_dict
+    if mu == 0:
+        np.save('tmp/part4_summary_data'+str(alpha), summary)
+    else:
+        np.save('tmp/part4_summary_data_momentum'+str(alpha), summary)
+    return W, b, perform_dict
+
+def part6_func(X, W, b, T, w1, w2):
+    size = W.shape
+    W1 = np.zeros(size)
+    W2 = np.zeros(size)
+    W1[299][8] = 1
+    W2[399][8] = 1
+    print W1.shape
+    print W2.shape
+    return part3_cross_entropy(batch_layer_computation(W + w1*W1 + w2*W2, X, b), T)
 
 # =================================== Part 1 ===================================
 # M = loadmat("mnist_all.mat")
@@ -206,8 +227,17 @@ for i in range(10):
     X = np.hstack((X, X_i))
     T = np.hstack((T, T_i))
 
-
-# TODO: Combine the data
-# TODO: gradient descent
-
+# W, b, perform_dict = gradient_descent(X, T)
 # ===================================  Part 5 ===================================
+# W, b, perform_dict = gradient_descent(X, T, mu=0.9)
+
+# ===================================  Part 6 ===================================
+
+W = np.load('tmp/part5_weight_5e-5_moment.npy')
+b = np.load('tmp/part5_bias_5e-5_moment.npy')
+# W is in size NxL, we choose 9th column and 300th and 400th entry in that column
+W[299][8] = 0.0
+W[399][8] = 0.0
+w1 = np.arange(0.0, 1.0, 0.01)
+w2 = np.arange(0.0, 1.0, 0.01)
+# part6_func(X, W, b, T, w1, w2)
