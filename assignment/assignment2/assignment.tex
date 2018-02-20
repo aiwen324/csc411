@@ -16,7 +16,7 @@
     keywordstyle=\color{magenta},
     numberstyle=\tiny\color{codegray},
     stringstyle=\color{codepurple},
-    basicstyle=\footnotesize,
+    basicstyle=\scriptsize,
     breakatwhitespace=false,         
     breaklines=true,                 
     captionpos=b,                    
@@ -33,18 +33,31 @@
 
 % ------------------------- Part 1 -------------------------
 \section{Part 1}
-The dataset is a dictionary consisting of 9 training sets which are just number 0 to 9 and 9 test sets. Each training set is a matrix with $N\times 784$ which N represents the number of handwritten digit images in the dataset and each row is an array of size $1\times 784$ is the flatten array of handwritten digit image, which originally is $28\times 28$.
+The dataset is a dictionary consisting of 9 training sets which are just number 0 to 9 and 9 test sets. Each training set is a matrix with $M\times 784$ which M represents the number of handwritten digit images in the dataset and each row is an array of size $1\times 784$ is the flatten array of handwritten digit image, which originally is $28\times 28$.
 
 I randomly pick 10 images for each number, they all looks pretty good. At least I believe they are classified to the correct number.
 
 % TODO: Include the image
 % ------------------------- Part 2 -------------------------
 \section{Part 2}
+Notice to make it convinient, I simply assume we already append the bias vector to Weight matrix
 \begin{lstlisting}[language=Python]
     def layer_computation(x, W, b, act_func=lambda x: x):
         L = np.dot(W.T, x) + b
       	output = softmax(L)
       	return L, output
+
+    def batch_layer_computation(X, W):
+        """ X is an input matrix with size NxM, N is the number of input units, M is
+        the number of training cases. W is a weight matrix already append bias vector 
+        with size (N+1)xL, L is the number of output layers. Notice we need extra 
+        one row for bias, so we should append another row vector [1, 1, 1, 1, ... ,1] 
+        to X to do implement the function. """
+        one_array = np.ones(X.shape[1])
+        X = np.vstack((X, one_array))
+        L1 = np.dot(W.T, X)
+        Y = softmax(L1)
+        return Y
 \end{lstlisting}
 
 % ------------------------- Part 3 -------------------------
@@ -62,13 +75,13 @@ Suppose X is a matrix with size $N\times M$, where N is the number of input laye
     % &= -t_k + y_k\\
     % &= y_k - t_k
     y_j^{(i)} &= \frac{e^{o_j^{(i)}}}{\sum_k e^{o_k^{(i)}}}\\
-    o_k^{(i)} &= \sum_{p=1}^{N}w_{pk}x_p^{(i)}\\
+    o_k^{(i)} &= \sum_{p=1}^{N}w_{pk}x_p^{(i)}+b_k\\
     \mathcal{L}_{CE} 
     &= \sum_{i=1}^M \sum_{j=0}^{L-1} -t_j^{(i)}logy_j^{(I)}\\
     &= \sum_{i=1}^M \sum_{j=0}^{L-1} -t_j^{(i)}[o_j^{(i)}-log(\sum_{k=0}^{L-1} e^{o_k^{(i)}})]\\
-    &= \sum_{i=1}^M \sum_{j=0}^{L-1} -t_j^{(i)}[\sum_{p=1}^{N}w_{pj}x_p^{(i)} - log\sum_k (e^{\sum_{p=1}^{N}w_{pk}x_p^{(i)}})]\\
+    &= \sum_{i=1}^M \sum_{j=0}^{L-1} -t_j^{(i)}[\sum_{p=1}^{N}w_{pj}x_p^{(i)}+b_j - log\sum_k (e^{\sum_{p=1}^{N}w_{pk}x_p^{(i)}+b_k})]\\
     \frac{\partial \mathcal{L}_{CE}}{\partial w_{sm}}
-    &= \sum_{i=1}^M [(-t_m^{(i)} + \frac{e^{\sum_{s=1}^{N}w_{sm}x_s^{(i)}}}{\sum_k (e^{\sum_{p=1}^{N}w_{pk}x_p^{(i)}})}\sum_{j=0}^{L-1} t_j^{(i)})\,\,x_s^{(i)}] && \text{Notice $\sum_{j=1}^{L-1} t_j = 1$}\\
+    &= \sum_{i=1}^M [(-t_m^{(i)} + \frac{e^{\sum_{s=1}^{N}w_{sm}x_s^{(i)}+b_m}}{\sum_k (e^{\sum_{p=1}^{N}w_{pk}x_p^{(i)}+b_k})}\sum_{j=0}^{L-1} t_j^{(i)})\,\,x_s^{(i)}]\\ \text{Notice $\sum_{j=1}^{L-1} t_j = 1$}\\
     &= \sum_{i=1}^M [(-t_m^{(i)} + \frac{e^{o_m^{(i)}}}{\sum_k e^{o_k^{(i)}}})x_s^{(i)}]\\
     &= \sum_{i=1}^M [(-t_m^{(i)} + y_m^{(i)})x_s^{(i)}]
 \end{align}
@@ -76,5 +89,96 @@ Therefore, we get the derivative of weight is:
 \[
     \frac{\partial \mathcal{L}_{CE}}{\partial W} = X(Y-T)^T
 \]
+To approximate the gradient, I use the following code:
+\begin{lstlisting}[language=Python]
+    def approx_CE_dWeight_single(X, W, T, p, q, t):
+        """Approximate the derivative of single entry in Jacobian matrix"""
+        new_weight = W.copy()
+        new_weight[p][q] += t
+        Y = batch_layer_computation(X, W)
+        Y_h = batch_layer_computation(X, new_weight)
+        df = part3_cross_entropy(Y_h, T) - part3_cross_entropy(Y, T)
+        df = np.true_divide(df, t)
+        return df
 
+    def approx_CE_dWeight(X, W, T, t=1e-4):
+        size = W.shape
+        df_matrix = np.empty(size, dtype=np.float64)
+        for i in range(size[0]):
+            for j in range(size[1]):
+                df_matrix[i][j] = approx_CE_dWeight_single(X, W, T, i, j, t)
+        return df_matrix
+\end{lstlisting}
+I wrote some test case to test the function. Notice here W already append the bias vectors.
+\begin{lstlisting}
+In [130]: X
+Out[130]: 
+array([[1, 5],
+       [2, 4]])
+
+In [131]: W
+Out[131]: 
+array([[3., 4., 7.],
+       [2., 5., 9.],
+       [3., 2., 6.]])
+
+In [143]: Y = ast2.batch_layer_computation(X, W)
+
+In [144]: Y
+Out[144]: 
+array([[7.58255810e-10, 7.09547416e-23],
+       [3.05902227e-07, 6.30511676e-16],
+       [9.99999693e-01, 1.00000000e+00]])
+
+In [133]: T
+Out[133]: 
+array([[1, 0],
+       [0, 1],
+       [0, 0]])
+
+In [134]: ast2.CE_dWeight(X, Y, T)
+Out[134]: 
+array([[-1.        , -4.99999969,  5.99999969],
+       [-2.        , -3.99999939,  5.99999939],
+       [-1.        , -0.99999969,  1.99999969]])
+
+
+In [135]: ast2.approx_CE_dWeight(ast2.batch_layer_computation, X, W, T)
+Out[135]: 
+array([[-1.        , -4.99999969,  5.99999969],
+       [-2.        , -3.99999939,  5.99999939],
+       [-1.        , -0.99999969,  1.99999969]])
+
+In [184]: X
+Out[184]: 
+array([[2, 8],
+       [1, 9]])
+
+In [185]: W
+Out[185]: 
+array([[1., 7., 2.],
+       [0., 7., 5.],
+       [6., 8., 4.]])
+
+In [186]: Y = ast2.batch_layer_computation(X, W)
+
+In [187]: Y
+Out[187]: 
+array([[7.58255957e-10, 8.40859712e-50],
+       [9.99999887e-01, 1.00000000e+00],
+       [1.12535162e-07, 1.18506486e-27]])
+
+In [188]: ast2.CE_dWeight(X, Y, T)
+Out[188]: 
+array([[-2.00000000e+00,  1.99999977e+00,  2.25070324e-07],
+       [-9.99999999e-01,  9.99999887e-01,  1.12535162e-07],
+       [-9.99999999e-01,  9.99999887e-01,  1.12535162e-07]])
+
+In [189]: ast2.approx_CE_dWeight(X, W, T)
+Out[189]: 
+array([[-2.00000000e+00,  1.99999977e+00,  2.25099939e-07],
+       [-9.99999999e-01,  9.99999887e-01,  1.12549969e-07],
+       [-9.99999999e-01,  9.99999887e-01,  1.12549969e-07]])
+
+\end{lstlisting}
 \end{document}
