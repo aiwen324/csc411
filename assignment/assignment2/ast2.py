@@ -246,19 +246,21 @@ def par6_get_lost(X, W, b, T, w1, w2, coord1, coord2):
     return part3_cross_entropy(batch_layer_computation(X, W + w1*W1 + w2*W2, b), T)
 
 # =================================== Part 1 ===================================
-# M = loadmat("mnist_all.mat")
-# train_key = 'test'
-# for k in range(10):
-#   train_set = M[train_key+str(k)]
-#   a = np.random.randint(train_set.shape[0], size = 10)
-#   f, axarr = plt.subplots(5, 2)
-#   for i in range(5):
-#       for j in range(2):
-#           axarr[i, j].imshow(train_set[i*2+j].reshape((28,28)), cmap = cm.gray)
-#           axarr[i, j].axis('off')
-#   f.subplots_adjust(hspace=0.3)
-#   f.savefig('report/'+train_key+str(k)+'.png')
-# plt.show()
+os.mkdir("tmp")
+os.mkdir("report")
+M = loadmat("mnist_all.mat")
+train_key = 'train'
+for k in range(10):
+  train_set = M[train_key+str(k)]
+  a = np.random.randint(train_set.shape[0], size = 10)
+  f, axarr = plt.subplots(5, 2)
+  for i in range(5):
+      for j in range(2):
+          axarr[i, j].imshow(train_set[i*2+j].reshape((28,28)), cmap = cm.gray)
+          axarr[i, j].axis('off')
+  f.subplots_adjust(hspace=0.3)
+  f.savefig('report/'+train_key+str(k)+'.png')
+plt.show()
 
 
 # ===================================  Part 2 ===================================
@@ -280,24 +282,25 @@ for i in range(10):
     T = np.hstack((T, T_i))
 
 # W, b, perform_dict = gradient_descent(X, T)
+# TODO, do the save and plot stuff
 # ===================================  Part 5 ===================================
 # W, b, perform_dict = gradient_descent(X, T, mu=0.9)
 
 # ===================================  Part 6 ===================================
 
-# W = np.load('tmp/part5_weight_5e-5_moment.npy')
-# b = np.load('tmp/part5_bias_5e-5_moment.npy')
-# # W is in size NxL, we choose 9th column and 300th and 400th entry in that column
-# # In [14]: W[299][8]
-# # Out[14]: 0.4306923721819063
-# # In [15]: W[399][8]
-# # Out[15]: -0.9145373814781661
-# W[299][8] = 0.0
-# W[399][8] = 0.0
-# w1 = np.arange(0.3, 0.5, 0.01)
-# w2 = np.arange(-1.0, -0.8, 0.01)
-# # it takes a while to calculate 
-# t = part6_func(X, W, b, T, w1, w2)
+W = np.load('tmp/part5_weight_5e-5_moment.npy')
+b = np.load('tmp/part5_bias_5e-5_moment.npy')
+# W is in size NxL, we choose 9th column and 300th and 400th entry in that column
+# In [14]: W[299][8]
+# Out[14]: 0.4306923721819063
+# In [15]: W[399][8]
+# Out[15]: -0.9145373814781661
+W[299][8] = 0.0
+W[399][8] = 0.0
+w1 = np.arange(0.3, 0.5, 0.01)
+w2 = np.arange(-1.0, -0.8, 0.01)
+# it takes a while to calculate 
+t = part6_func(X, W, b, T, w1, w2)
 
 
 # In [13]: W[296][8]
@@ -329,3 +332,4 @@ plt.ylabel('w2')
 plt.clabel(CS, inline=1, fontsize=10)
 plt.legend(loc='upper left')
 plt.title('Contour plot')
+plt.show()
