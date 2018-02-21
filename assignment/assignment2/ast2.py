@@ -32,8 +32,9 @@ def batch_layer_computation(X, W, b):
     output layers. Notice we need extra one row for bias, so we should append 
     another row vector [1, 1, 1, 1, ... ,1] to X to do implement the function. """
     one_array = np.ones(X.shape[1])
-    X = np.vstack((X, one_array))
+    print W.shape
     print b.shape
+    X = np.vstack((X, one_array))
     W = np.vstack((W, b))
     L1 = np.dot(W.T, X)
     Y = softmax(L1)
@@ -152,24 +153,23 @@ def gradient_descent(X, T, alpha=0.00001, EPS = 1e-5, max_iter = 300, mu = 0):
     previous_b = b - 10*EPS
     count = 0
     perform_dict = dict()
-
     summary = np.empty((6, 0), dtype=float)
-
     X_test, T_test, X_valid, T_valid = seperate_train_valid()
-
     p = 0
-    
     while norm(W - previous_W)+norm(b - previous_b) > EPS and count < max_iter:
         previous_W = W.copy()
-        b = b.copy()
+        previous_b = b.copy()
+        # Getting data for plot
         Y = batch_layer_computation(X, W, b)
         Y_test = batch_layer_computation(X_test, W, b)
         Y_valid = batch_layer_computation(X_valid, W, b)
         data = calculate_data(Y, T, Y_test, T_test, Y_valid, T_valid)
+        # gradient descent procedure
         summary = np.hstack((summary, data[:,None]))
         p = mu*p + alpha*CE_dWeight(X, Y, T)
         W = W - p
         b = b - alpha*CE_dBias(Y, T)
+        # print some information
         print "Iter: " , count
         print "Weight: " , W
         print "Cost: " , part3_cross_entropy(Y, T)
@@ -183,15 +183,67 @@ def gradient_descent(X, T, alpha=0.00001, EPS = 1e-5, max_iter = 300, mu = 0):
         np.save('tmp/part4_summary_data_momentum'+str(alpha), summary)
     return W, b, perform_dict
 
+
+def part6_dfW(X, Y, T, coord1, coord2):
+    dW = CE_dWeight(X, Y, T)
+    dw1 = dW[coord1[0]][coord1[1]]
+    dw2 = dW[coord2[0]][coord2[1]]
+    dw1w2 = np.zeros(dW.shape)
+    dw1w2[coord1[0]][coord1[1]] = dw1
+    dw1w2[coord2[0]][coord2[1]] = dw2
+    return dw1w2
+
+def get_w1_w2(W, coord1, coord2):
+    return W[coord1[0]][coord1[1]], W[coord2[0]][coord2[1]]
+
+
+
+def gradient_descent_part6(X, W, b, T, df_W, coord1, coord2, alpha=0.00001, EPS = 1e-5, max_iter = 300, mu = 0):
+    """ X is the matrix of inputs, NxM, N is the number of input units, M is the 
+    number of training cases. T is the matrix of results, size: LxM, L is the 
+    number of output units """
+    # Initialize a weight matrix
+    size = [X.shape[0], T.shape[0]]
+    previous_W = W - 10*EPS
+    count = 0
+    init_w1, init_w2 = get_w1_w2(W, coord1, coord2)
+    traj = [(init_w1, init_w2)]
+    p = 0
+    while norm(W - previous_W) > EPS and count < max_iter:
+        if count > max_iter/2:
+            alpha = 0.00001
+        previous_W = W
+        Y = batch_layer_computation(X, W, b)
+        p = mu*p + alpha*df_W(X, Y, T, coord1, coord2)
+        W = W - p
+        w1, w2 = get_w1_w2(W, coord1, coord2)
+        traj.append((w1, w2))
+        print "Iter: " , count
+        print "Weight: " , W
+        print "Cost: " , part3_cross_entropy(Y, T)
+        if count % (max_iter/5) == 0:
+            print "Accuracy on test set: ", calculate_accuracy(Y, T)
+        count += 1
+    return traj
+
 def part6_func(X, W, b, T, w1, w2):
-    size = W.shape
-    W1 = np.zeros(size)
-    W2 = np.zeros(size)
+    W_size = W.shape
+    W1 = np.zeros(W_size)
+    W2 = np.zeros(W_size)
     W1[299][8] = 1
     W2[399][8] = 1
     print W1.shape
     print W2.shape
-    return part3_cross_entropy(batch_layer_computation(W + w1*W1 + w2*W2, X, b), T)
+    return np.array([part3_cross_entropy(batch_layer_computation(X, W + w1_entry*W1 + w2_entry*W2, b), T)
+        for w1_entry in w1 for w2_entry in w2]).reshape((w1.shape[0], w2.shape[0]))
+
+def par6_get_lost(X, W, b, T, w1, w2, coord1, coord2):
+    W_size = W.shape
+    W1 = np.zeros(W_size)
+    W2 = np.zeros(W_size)
+    W1[coord1[0]][coord1[1]] = 1
+    W2[coord2[0]][coord2[1]] = 1
+    return part3_cross_entropy(batch_layer_computation(X, W + w1*W1 + w2*W2, b), T)
 
 # =================================== Part 1 ===================================
 # M = loadmat("mnist_all.mat")
@@ -233,11 +285,47 @@ for i in range(10):
 
 # ===================================  Part 6 ===================================
 
+# W = np.load('tmp/part5_weight_5e-5_moment.npy')
+# b = np.load('tmp/part5_bias_5e-5_moment.npy')
+# # W is in size NxL, we choose 9th column and 300th and 400th entry in that column
+# # In [14]: W[299][8]
+# # Out[14]: 0.4306923721819063
+# # In [15]: W[399][8]
+# # Out[15]: -0.9145373814781661
+# W[299][8] = 0.0
+# W[399][8] = 0.0
+# w1 = np.arange(0.3, 0.5, 0.01)
+# w2 = np.arange(-1.0, -0.8, 0.01)
+# # it takes a while to calculate 
+# t = part6_func(X, W, b, T, w1, w2)
+
+
+# In [13]: W[296][8]
+# Out[13]: -0.3182085750988622
+# In [14]: W[406][8]
+# Out[14]: 0.36872569390498366
+
+
 W = np.load('tmp/part5_weight_5e-5_moment.npy')
 b = np.load('tmp/part5_bias_5e-5_moment.npy')
-# W is in size NxL, we choose 9th column and 300th and 400th entry in that column
-W[299][8] = 0.0
-W[399][8] = 0.0
-w1 = np.arange(0.0, 1.0, 0.01)
-w2 = np.arange(0.0, 1.0, 0.01)
-# part6_func(X, W, b, T, w1, w2)
+W[405][8] = 1.
+W[406][8] = 1.
+gd_traj = gradient_descent_part6(X, W, b, T, part6_dfW, (405, 8), (406, 8),alpha=5e-5)
+mo_traj = gradient_descent_part6(X, W, b, T, part6_dfW, (405, 8), (406, 8), alpha=5e-5, mu=0.9)
+w1s = np.arange(-1, 1, 0.1)
+w2s = np.arange(-1, 1, 0.1)
+w1z, w2z = np.meshgrid(w1s, w2s)
+C = np.zeros([w1s.size, w2s.size])
+W[405][8] = 0
+W[406][8] = 0
+for i, w1 in enumerate(w1s):
+    for j, w2 in enumerate(w2s):
+        C[i,j] = par6_get_lost(X, W, b, T, w1, w2, (405, 8), (406, 8))
+CS = plt.contour(w1z, w2z, C)
+plt.plot([a for a, c in gd_traj], [c for a,c in gd_traj], 'yo-', label="No Momentum")
+plt.plot([a for a, c in mo_traj], [c for a,c in mo_traj], 'go-', label="Momentum")
+plt.xlabel('w1')
+plt.ylabel('w2')
+plt.clabel(CS, inline=1, fontsize=10)
+plt.legend(loc='upper left')
+plt.title('Contour plot')

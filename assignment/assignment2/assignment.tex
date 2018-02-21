@@ -36,16 +36,19 @@
 }
 \lstset{style=mystyle}
 \begin{document}
-
+\title{CSC411 Project2}
+\author{Yifei Ai}
+\date{}
+\maketitle
 % ------------------------- Part 1 -------------------------
-\section{Part 1}
+\section*{Part 1}
 The dataset is a dictionary consisting of 9 training sets which are just number 0 to 9 and 9 test sets. Each training set is a matrix with $M\times 784$ which M represents the number of handwritten digit images in the dataset and each row is an array of size $1\times 784$ is the flatten array of handwritten digit image, which originally is $28\times 28$.
 
 I randomly pick 10 images for each number, they all looks pretty good. At least I believe they are classified to the correct number.
 
 % TODO: Include the image
 % ------------------------- Part 2 -------------------------
-\section{Part 2}
+\section*{Part 2}
 Notice to make it convinient, I simply assume we already append the bias vector to Weight matrix
 \begin{lstlisting}[language=Python]
     def layer_computation(x, W, b, act_func=lambda x: x):
@@ -67,6 +70,7 @@ Notice to make it convinient, I simply assume we already append the bias vector 
 \end{lstlisting}
 
 % ------------------------- Part 3 -------------------------
+\section*{Part 3}
 Suppose X is a matrix with size $N\times M$, where N is the number of input layer, M is the number of training cases. Let W be a matrix be $N\times L$ where L is the number of units in hidden layer. Here L is 10. The output matrix Y has size of $L\times M$
 \begin{align}
     % \frac{\partial \mathcal{L}_{CE}}{\partial y_k} &= \frac{-t_k}{y_k}\\
@@ -190,7 +194,7 @@ array([[-2.00000000e+00,  1.99999977e+00,  2.25099939e-07],
 % ------------------------- Part 4 -------------------------
 
 % ------------------------- Part 5 -------------------------
-\section{Part 5}
+\section*{Part 5}
 I just simply follow the algorithm, momentum is at line 29
 \begin{lstlisting}[language=Python]
 def gradient_descent(X, T, alpha=0.00001, EPS = 1e-5, max_iter = 300, mu = 0):
@@ -252,4 +256,58 @@ We can see that gradient descent with momentum converge much faster than the one
 \end{figure}
 
 % ------------------------- Part 6 -------------------------
+\section*{Part 6}
+\subsection*{(a)}
+\begin{figure}[h]
+    \includegraphics[width=0.5\textwidth]{./report/part6a_contour.png}
+    \caption{Contour set with w1 and w2 around optimum}
+\end{figure}
+
+\subsection*{(b), (c)}
+I tried several examples, these two demonstrate the feature of momentum
+\begin{figure}[H]
+    \subfloat[label 1]{{\includegraphics[width=0.5\textwidth]{./report/part6bc_nice.png}}}
+    \qquad
+    \subfloat[label 2]{{\includegraphics[width=0.5\textwidth]{./report/part6bc_nice2.png}}}
+    \caption{trajectory for gradient descent with moment and without momentum}
+\end{figure}
+
+\subsection*{(d)}
+The trajectory with momentum goes to the optimum faster, but would get around the optimum in a very small range compare with the trajectory without momentum. This is because we have momentum, that somehow remembers the direction of last update.
+
+\subsection*{(e)}
+We should choose the pixel in the center of the image. Our image is 28*28, so if we choose some variable on the edge then either the gradient descent on those 2 variables stop on first several steps or have a very slow trajectory. I think this is becuase it is on the edge, so since other entries in W is already close to optimum, so the variable on the edge doesn't really affect the result, in other word, it probably because the input is 0 corresponds to that entry is 0, so it doesn't really affect too much.
+
+\begin{figure}[H]
+    \includegraphics[width=\textwidth]{./report/partbc_contour_bad.png}
+    \caption{trajectory that doens't demonstrate the benefit of momentum}
+\end{figure}
+
+This is the w1, w2 from W[100][8] and W[200][8], if we check the train set $M['train8'][i][100]$ and $['train8'][i][200]$, most of them are 0. We can see that 2 trajectories are almost the same.
+
+To get a nice example, I simply look for some entry in M['train8'][i] that is not 0, since 8 relatively has more entries be gray compare with other number in my opinion. Then I do the gradient descent to those 2 variables on the W.
+
+% ------------------------- Part 7 -------------------------
+\section*{Part 7}
+Suppose we use back propagation, then, denote $T(N)$ as the complexity with N layers.
+\begin{figure}[h]
+    \centering
+    \includegraphics[scale=0.2]{report/part7_layer.jpg}
+    \caption{Network with N+1 Layer}
+\end{figure}
+\subsection*{With Back Propagation}
+Consider we have $N+1$ layers, now, if we need to calculate the gradients for all weights, then the first N layer we have calculate actually costs $T(N)$ by our assumption, then for the last layer, we need to know $\frac{\partial C}{\partial W_0}$. Since we use back propagation, we have $\frac{\partial C}{\partial L_2}$, thus we just need to calculate $\frac{\partial L_2}{\partial L_1}$ and $\frac{\partial L_1}{\partial W_0}$. So we will have
+\[
+    T(N+1) = T(N) + 2
+\]
+Which means complexity with back propagation is $O(N)$.
+\subsection*{Without Back Propagation}
+In this case, since we don't store any information, to calculate $\frac{\partial C}{\partial W_0}$, we need to do $\frac{\partial C}{\partial L_N}\frac{\partial L_N}{\partial L_{N-1}}\cdots \frac{\partial L_2}{\partial L_1}\frac{\partial L_1}{\partial W_0}$. So we will have
+\[
+    T(N+1) = T(N) + (N + 1)
+\]
+This means the complexity without back propagation is $O(N^2)$
+
+% ------------------------- Part 8 -------------------------
+
 \end{document}
