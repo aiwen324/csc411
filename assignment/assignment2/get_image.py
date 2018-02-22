@@ -185,6 +185,11 @@ def generate_dataset():
         else:
             raise NotImplementedError
         # We split the data_matrix to 3 parts, training set, test set, validation set
+        np.random.seed(0)
+        matrix_idx = np.random.permutation(range(data_matrix.shape[0]))
+        # print matrix_idx
+        data_matrix = np.array(data_matrix[matrix_idx])
+        # print data_matrix.shape
         data_size = data_matrix.shape[0]
         train_size = int((data_size-20)*0.9)
         test_set = data_matrix[:20, :]

@@ -309,5 +309,52 @@ In this case, since we don't store any information, to calculate $\frac{\partial
 This means the complexity without back propagation is $O(N^2)$
 
 % ------------------------- Part 8 -------------------------
-
+\section*{Part 8}
+I use a network with 32*32 or 64*64 input units, 6 output units, and one hidden layer. In that hidden layer, there are 12 hidden units, the activate function is ReLU. I tried both 32x32 and 64x64 to train the network, and I found the 32x32 has better performance. I guess the reason is 64x64 resolution cause overfitting. Also, learning rate with $10^{-4}$ has best performance on test set. Here are the final performance for each learning rate.
+\begin{lstlisting}
+Resolution: 32x32, doing gradient descent with learning rate: 0.01 ......
+0.758333333333
+Resolution: 32x32, doing gradient descent with learning rate: 0.001 ......
+0.783333333333
+Resolution: 32x32, doing gradient descent with learning rate: 0.0001 ......
+0.791666666667
+Resolution: 64x64, doing gradient descent with learning rate: 0.0001 ......
+0.641666666667
+Resolution: 64x64, doing gradient descent with learning rate: 1e-05 ......
+0.725
+Resolution: 64x64, doing gradient descent with learning rate: 1e-06 ......
+0.525
+\end{lstlisting}
+\begin{figure}[h]
+    \subfloat[rate 0.01]{{\includegraphics[width=0.28\textwidth]{report/part8_curves_performance1.png}}}
+    \qquad
+    \subfloat[rate 0.001]{{\includegraphics[width=0.28\textwidth]{report/part8_curves_performance2.png}}}
+    \qquad
+    \subfloat[rate 0.0001]{{\includegraphics[width=0.28\textwidth]{report/part8_curves_performance3.png}}}
+    \caption{Resolution 32x32, learning curve with rate 0.01, 0.001, 0.0001}
+\end{figure}
+\begin{figure}[h]
+    \subfloat[rate 0.01]{{\includegraphics[width=0.28\textwidth]{report/part8_curves_loss1.png}}}
+    \qquad
+    \subfloat[rate 0.001]{{\includegraphics[width=0.28\textwidth]{report/part8_curves_loss2.png}}}
+    \qquad
+    \subfloat[rate 0.0001]{{\includegraphics[width=0.28\textwidth]{report/part8_curves_loss3.png}}}
+    \caption{Resolution 32x32, learning curve with rate 0.01, 0.001, 0.0001}
+\end{figure}
+\begin{figure}[h]
+    \subfloat[rate 0.0001]{{\includegraphics[width=0.28\textwidth]{report/part8_64curves_loss1.png}}}
+    \qquad
+    \subfloat[rate $10^{-5}$]{{\includegraphics[width=0.28\textwidth]{report/part8_64curves_loss2.png}}}
+    \qquad
+    \subfloat[rate $10^{-6}$]{{\includegraphics[width=0.28\textwidth]{report/part8_64curves_loss3.png}}}
+    \caption{Resolution 64x64, learning curve with rate $10^{-4},10^{-5},10^{-6}$}
+\end{figure}
+\begin{figure}[H]
+    \subfloat[rate 0.0001]{{\includegraphics[width=0.28\textwidth]{report/part8_64curves_performance1.png}}}
+    \qquad
+    \subfloat[rate $10^{-5}$]{{\includegraphics[width=0.28\textwidth]{report/part8_64curves_performance2.png}}}
+    \qquad
+    \subfloat[rate $10^{-6}$]{{\includegraphics[width=0.28\textwidth]{report/part8_64curves_performance3.png}}}
+    \caption{Resolution 64x64, learning curve with rate $10^{-4},10^{-5},10^{-6}$}
+\end{figure}
 \end{document}
