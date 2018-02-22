@@ -23,6 +23,38 @@ import torchvision
 import torch.nn as nn
 
 
+def conver_img2(img_size):
+    if not os.path.exists('cropped2') or not os.path.isdir('cropped2'):
+        os.mkdir('cropped2')
+    for actor in os.listdir("uncropped"):
+        act_bd_box_file = open(actor + ".txt")
+        img_path = 'cropped2/' + actor + str(img_size[0]) 
+        if not os.path.exists(img_path) or not os.path.isdir(img_path):
+            os.mkdir(img_path)
+        for filename in os.listdir("uncropped/" + actor):
+            try:
+                im = imread("uncropped/" + actor + "/" + filename)
+                # move file pointer to 0
+                act_bd_box_file.seek(0)
+                for line in act_bd_box_file:
+                    if filename in line:
+                        bd_box = line.split()[3].split(',')
+                        bd_box = [int(a) for a in bd_box]
+                        cropped_im = im[bd_box[1]:bd_box[3], bd_box[0]:bd_box[2]]
+                        # Check if we the image is 2D or 3D
+                        if len(cropped_im.shape) == 2:
+                            print "Find {} is not a 3D array".format(filename)
+                            continue
+                        # Resize the image, here should be (227, 227, 3)
+                        cropped_im = imresize(cropped_im, img_size)
+                        imsave(img_path + "/" + filename, cropped_im)
+                        break
+            # If detect some image cannot be opened in the system, report error
+            except IOError:
+                f = open(actor + "_err.txt", "a")
+                f.write(filename + '\n')
+                f.close()
+
 def generate_matrix(path, img_size):
     data_matrix = np.empty((0, img_size*img_size), dtype=float)
     for filename in os.listdir(path):
@@ -142,7 +174,7 @@ def calculate_data(model, x_test, x_valid, test_y, valid_y, y_test_classes, y_va
 #os.mkdir('cropped')
 # conver_img([32, 32])
 # conver_img([64, 64])
-# data_dict = generate_dataset()
+data_dict = generate_dataset()
 # ======================= Part 8 ===========================
 acts = ['bracco', 'gilpin', 'harmon', 'baldwin', 'hader', 'carell']
 # train_x, train_y = get_set(data_dict, "train", 32, acts)
@@ -287,145 +319,156 @@ acts = ['bracco', 'gilpin', 'harmon', 'baldwin', 'hader', 'carell']
 
 
 # ======================= Part 9 ===========================
-# train_x, train_y = get_set(data_dict, "train", 32, acts)
-# test_x, test_y = get_set(data_dict, 'test', 32, acts)
-# valid_x, valid_y = get_set(data_dict, 'valid', 32, acts)
-# # Setting up dimension
-# dim_x = 32*32
-# dim_h = 12
-# dim_out = 6
-# dtype_float = torch.FloatTensor
-# dtype_long = torch.LongTensor
+train_x, train_y = get_set(data_dict, "train", 32, acts)
+test_x, test_y = get_set(data_dict, 'test', 32, acts)
+valid_x, valid_y = get_set(data_dict, 'valid', 32, acts)
+# Setting up dimension
+dim_x = 32*32
+dim_h = 128
+dim_out = 6
+dtype_float = torch.FloatTensor
+dtype_long = torch.LongTensor
 
-# x = Variable(torch.from_numpy(train_x), requires_grad=False).type(dtype_float)
-# y_classes = Variable(torch.from_numpy(np.argmax(train_y, 1)), requires_grad=False).type(dtype_long)
+x = Variable(torch.from_numpy(train_x), requires_grad=False).type(dtype_float)
+y_classes = Variable(torch.from_numpy(np.argmax(train_y, 1)), requires_grad=False).type(dtype_long)
 
-# x_test = Variable(torch.from_numpy(test_x), requires_grad=False).type(dtype_float)
-# y_test_classes = Variable(torch.from_numpy(np.argmax(test_y, 1)), requires_grad=False).type(dtype_long)
+x_test = Variable(torch.from_numpy(test_x), requires_grad=False).type(dtype_float)
+y_test_classes = Variable(torch.from_numpy(np.argmax(test_y, 1)), requires_grad=False).type(dtype_long)
 
-# x_valid = Variable(torch.from_numpy(valid_x), requires_grad=False).type(dtype_float)
-# y_valid_classes = Variable(torch.from_numpy(np.argmax(valid_y, 1)), requires_grad=False).type(dtype_long)
+x_valid = Variable(torch.from_numpy(valid_x), requires_grad=False).type(dtype_float)
+y_valid_classes = Variable(torch.from_numpy(np.argmax(valid_y, 1)), requires_grad=False).type(dtype_long)
 
-# learning_rate = 0.0001
-# torch.manual_seed(0)
-# model = torch.nn.Sequential(
-#    torch.nn.Linear(dim_x, dim_h),
-#    torch.nn.ReLU(),
-#    torch.nn.Linear(dim_h, dim_out),
-# )
-# loss_fn = torch.nn.CrossEntropyLoss()
-# print "Resolution: 32x32, doing gradient descent with learning rate: {} ......".format(learning_rate)
-# optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-# for t in range(10000):
-#    y_pred = model(x)
-#    loss = loss_fn(y_pred, y_classes)
+learning_rate = 1e-3
+torch.manual_seed(0)
+model = torch.nn.Sequential(
+torch.nn.Linear(dim_x, dim_h),
+torch.nn.ReLU(),
+torch.nn.Linear(dim_h, dim_out),
+)
+loss_fn = torch.nn.CrossEntropyLoss()
+print "Resolution: 32x32, doing gradient descent with learning rate: {} ......".format(learning_rate)
+optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+for t in range(1000):
+   y_pred = model(x)
+   loss = loss_fn(y_pred, y_classes)
    
-#    model.zero_grad()  # Zero out the previous gradient computation
-#    loss.backward()    # Compute the gradient
-#    optimizer.step()   # Use the gradient information to
-#    # make a step
-# y_pred = model(x_test).data.numpy()
-# print np.mean(np.argmax(y_pred, 1) == np.argmax(test_y, 1))
-# Weights = model[0].weight.data.numpy()
-# for Weight in Weights:
-#    fig = figure(1)
-#    ax = fig.gca()    
-#    heatmap = ax.imshow(Weight.reshape((32,32)), cmap = cm.coolwarm)
-#    fig.colorbar(heatmap, shrink = 0.5, aspect=5)
-#    show()
+   model.zero_grad()  # Zero out the previous gradient computation
+   loss.backward()    # Compute the gradient
+   optimizer.step()   # Use the gradient information to
+   # make a step
+y_pred = model(x_test).data.numpy()
+print np.mean(np.argmax(y_pred, 1) == np.argmax(test_y, 1))
+# Doing some analysis
+Weights2 = model[2].weight.data.numpy()
+bracco_weights = Weights2[5]
+bracco_highest = np.argmax(bracco_weights)
+Weights = model[0].weight.data.numpy()
+bracco_highest_weight = Weights[bracco_highest]
+fig = figure(1)
+ax = fig.gca()    
+heatmap = ax.imshow(bracco_highest_weight.reshape((32,32)), cmap = cm.coolwarm)
+fig.colorbar(heatmap, shrink = 0.5, aspect=5)
+show()
+gilpin_weights = Weights2[1]
+gilpin_highest = np.argmax(gilpin_weights)
+gilpin_highest_weight = Weights[gilpin_highest]
+fig = figure(1)
+ax = fig.gca()    
+heatmap = ax.imshow(gilpin_highest_weight.reshape((32,32)), cmap = cm.coolwarm)
+fig.colorbar(heatmap, shrink = 0.5, aspect=5)
+show()
 
 # ======================= Part 10 ===========================
 #conver_img2((227, 227, 3))
-class MyAlexNet(nn.Module):
-    def load_weights(self):
-        an_builtin = torchvision.models.alexnet(pretrained=True)
+# class MyAlexNet(nn.Module):
+#     def load_weights(self):
+#         an_builtin = torchvision.models.alexnet(pretrained=True)
         
-        features_weight_i = [0, 3, 6, 8, 10]
-        for i in features_weight_i:
-            self.features[i].weight = an_builtin.features[i].weight
-            self.features[i].bias = an_builtin.features[i].bias
-            
-#        classifier_weight_i = [1, 4, 6]
-#        for i in classifier_weight_i:
-#            self.classifier[i].weight = an_builtin.classifier[i].weight
-#            self.classifier[i].bias = an_builtin.classifier[i].bias
+#         features_weight_i = [0, 3, 6, 8, 10]
+#         for i in features_weight_i:
+#             self.features[i].weight = an_builtin.features[i].weight
+#             self.features[i].bias = an_builtin.features[i].bias
 
-    def __init__(self, num_classes=1000):
-        super(MyAlexNet, self).__init__()
-        self.features = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=11, stride=4, padding=2),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=3, stride=2),
-            nn.Conv2d(64, 192, kernel_size=5, padding=2),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=3, stride=2),
-            nn.Conv2d(192, 384, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(384, 256, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(256, 256, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=3, stride=2),
-        )
+#     def __init__(self, num_classes=1000):
+#         super(MyAlexNet, self).__init__()
+#         self.features = nn.Sequential(
+#             nn.Conv2d(3, 64, kernel_size=11, stride=4, padding=2),
+#             nn.ReLU(inplace=True),
+#             nn.MaxPool2d(kernel_size=3, stride=2),
+#             nn.Conv2d(64, 192, kernel_size=5, padding=2),
+#             nn.ReLU(inplace=True),
+#             nn.MaxPool2d(kernel_size=3, stride=2),
+#             nn.Conv2d(192, 384, kernel_size=3, padding=1),
+#             nn.ReLU(inplace=True),
+#             nn.Conv2d(384, 256, kernel_size=3, padding=1),
+#             nn.ReLU(inplace=True),
+#             nn.Conv2d(256, 256, kernel_size=3, padding=1),
+#             nn.ReLU(inplace=True),
+#             nn.MaxPool2d(kernel_size=3, stride=2),
+#         )
         
-        self.load_weights()
+#         self.load_weights()
 
-data_dict2 = generate_dataset2()
-learning_rate = 1e-3
-torch.manual_seed(0)
+# # Generate data from cropped image
+# data_dict2 = generate_dataset2()
 
-pre_load_model = MyAlexNet()
-pre_load_model.eval()
+# learning_rate = 1e-3
+# torch.manual_seed(0)
 
-dtype_float = torch.FloatTensor
-dtype_long = torch.LongTensor
-# train_size is 408 here
-train_x_whole, train_y_whole = get_set2(data_dict2, 'train', (3, 227, 227), acts)
-test_x, test_y = get_set2(data_dict2, 'test', (3,227,227), acts)
-valid_x, valid_y = get_set2(data_dict2, 'valid', (3,227,227), acts)
+# pre_load_model = MyAlexNet()
+# pre_load_model.eval()
 
-model_to_train = nn.Sequential(
-   nn.Linear(256*6*6, 1),
-   nn.ReLU(),
-   nn.Linear(1, 6),
-   )
-loss_fn = torch.nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model_to_train.parameters(), lr=learning_rate)
+# dtype_float = torch.FloatTensor
+# dtype_long = torch.LongTensor
+# # train_size is 408 here
+# # Get matrix from dictionary data_dict2 with specified acts
+# acts = ['bracco', 'gilpin', 'harmon', 'baldwin', 'hader', 'carell']
+# train_x_whole, train_y_whole = get_set2(data_dict2, 'train', (3, 227, 227), acts)
+# test_x, test_y = get_set2(data_dict2, 'test', (3,227,227), acts)
+# valid_x, valid_y = get_set2(data_dict2, 'valid', (3,227,227), acts)
+# # Define the model we need to train
+# model_to_train = nn.Sequential(
+#    nn.Linear(256*6*6, 6),
+#    nn.ReLU(),
+#    nn.Linear(6, 6),
+#    )
+# loss_fn = torch.nn.CrossEntropyLoss()
+# optimizer = torch.optim.Adam(model_to_train.parameters(), lr=learning_rate)
+# # Extracting data from AlexNet, Caching it
+# print "Calculating input data from AlexNet features net ................"
+# x_whole = Variable(torch.from_numpy(train_x_whole), requires_grad=False).type(dtype_float)
+# y_classes_whole = Variable(torch.from_numpy(np.argmax(train_y_whole, 1)), requires_grad=False).type(dtype_long)
+# x_whole = pre_load_model.features(x_whole)
+# x_whole = x_whole.view(x_whole.size(0), 256*6*6)
+# # Define epoch and seperate data to smaller data
+# epoch = 8
+# mini_batch_size = train_x_whole.shape[0]/epoch
 
-print "Calculating input data from AlexNet features net ................"
-x_whole = Variable(torch.from_numpy(train_x_whole), requires_grad=False).type(dtype_float)
-y_classes_whole = Variable(torch.from_numpy(np.argmax(train_y_whole, 1)), requires_grad=False).type(dtype_long)
-x_whole = pre_load_model.features(x_whole)
-x_whole = x_whole.view(x_whole.size(0), 256*6*6)
+# lst = []
+# for i in range(epoch):
+#     print "Generating mini batch training data ", i
+#     if i != epoch - 1:
+#         xi = x_whole[i*mini_batch_size:(i+1)*mini_batch_size, :]
+#         yi_classes = y_classes_whole[i*mini_batch_size:(i+1)*mini_batch_size]
+#     else:
+#         xi = x_whole[i*mini_batch_size:, :]
+#         yi_classes = y_classes_whole[i*mini_batch_size:]
+#     lst.append((xi, yi_classes))
 
-epoch = 408
-mini_batch_size = train_x_whole.shape[0]/epoch
+# for t in range(100):
+#     print "Beginning {}th iteration".format(str(t))
+#     for i in range(epoch):
+#         print i
+#         x = lst[i][0]
+#         y_classes = lst[i][1]
+#         y_pred = model_to_train(x)
+#         loss = loss_fn(y_pred, y_classes)
+#         model_to_train.zero_grad()  # Zero out the previous gradient computation
+#         loss.backward(retain_graph=True)    # Compute the gradient
+#         optimizer.step()   # Use the gradient information to
 
-lst = []
-for i in range(epoch):
-    print "Generating mini batch training data ", i
-    if i != epoch - 1:
-        xi = x_whole[i*mini_batch_size:(i+1)*mini_batch_size, :]
-        yi_classes = y_classes_whole[i*mini_batch_size:(i+1)*mini_batch_size]
-    else:
-        xi = x_whole[i*mini_batch_size:, :]
-        yi_classes = y_classes_whole[i*mini_batch_size:]
-    lst.append((xi, yi_classes))
-
-for t in range(100):
-    print "Beginning {}th iteration".format(str(t))
-    for i in range(epoch):
-        print i
-        x = lst[i][0]
-        y_classes = lst[i][1]
-        y_pred = model_to_train(x)
-        loss = loss_fn(y_pred, y_classes)
-        model_to_train.zero_grad()  # Zero out the previous gradient computation
-        loss.backward(retain_graph=True)    # Compute the gradient
-        optimizer.step()   # Use the gradient information to
-
-x_test = Variable(torch.from_numpy(test_x), requires_grad=False).type(dtype_float)
-x_test = pre_load_model.features(x_test)
-x_test = x_test.view(x_test.size(0), 256*6*6)
-y_pred = model_to_train(x_test).data.numpy()
-print np.mean(np.argmax(y_pred, 1) == np.argmax(test_y, 1))
+# x_test = Variable(torch.from_numpy(test_x), requires_grad=False).type(dtype_float)
+# x_test = pre_load_model.features(x_test)
+# x_test = x_test.view(x_test.size(0), 256*6*6)
+# y_pred = model_to_train(x_test).data.numpy()
+# print np.mean(np.argmax(y_pred, 1) == np.argmax(test_y, 1))
