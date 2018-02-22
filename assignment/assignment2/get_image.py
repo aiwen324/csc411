@@ -161,9 +161,75 @@ def conver_img(img_size):
                 f = open(actor + "_err.txt", "a")
                 f.write(filename + '\n')
                 f.close()
+                
+                
+def conver_img2(img_size):
+    if not os.path.exists('cropped2') or not os.path.isdir('cropped2'):
+        os.mkdir('cropped2')
+    for actor in os.listdir("uncropped"):
+        act_bd_box_file = open(actor + ".txt")
+        img_path = 'cropped2/' + actor + str(img_size[0]) 
+        if not os.path.exists(img_path) or not os.path.isdir(img_path):
+            os.mkdir(img_path)
+        for filename in os.listdir("uncropped/" + actor):
+            try:
+                im = imread("uncropped/" + actor + "/" + filename)
+                # move file pointer to 0
+                act_bd_box_file.seek(0)
+                for line in act_bd_box_file:
+                    if filename in line:
+                        bd_box = line.split()[3].split(',')
+                        bd_box = [int(a) for a in bd_box]
+                        cropped_im = im[bd_box[1]:bd_box[3], bd_box[0]:bd_box[2]]
+                        # Check if we the image is 2D or 3D
+                        if len(cropped_im.shape) == 2:
+                            print "Find {} is not a 3D array".format(filename)
+                            continue
+                        # Resize the image, here should be (227, 227, 3)
+                        cropped_im = imresize(cropped_im, img_size)
+                        imsave(img_path + "/" + filename, cropped_im)
+                        break
+            # If detect some image cannot be opened in the system, report error
+            except IOError:
+                f = open(actor + "_err.txt", "a")
+                f.write(filename + '\n')
+                f.close()
+                
+def generate_matrix2(path):
+    data_tensor = []
+    for filename in os.listdir(path):
+        try:
+            im = imread(path+filename)[:, :, :3]
+        except IOError as inst:
+            print inst.args
+            os.remove(path+filename)
+            continue
+        im = im - np.mean(im.flatten())
+        im = im/np.max(np.abs(im.flatten()))
+        im = np.rollaxis(im, -1).astype(float32)
+        data_tensor.append(im)
+    data_matrix = np.stack(data_tensor, axis=0)
+#    print "Get data as shape: ", data_matrix.shape
+    return data_matrix
 
-# conver_img([32, 32])
-# conver_img([64, 64])
+def generate_dataset2():
+    data_dict = dict()
+    for dirname in os.listdir('cropped2'):
+        path = 'cropped2/'+ dirname + '/'
+        data_matrix = generate_matrix2(path)
+        np.random.seed(0)
+        matrix_idx = np.random.permutation(range(data_matrix.shape[0]))
+        data_matrix = np.array(data_matrix[matrix_idx])
+        data_size = data_matrix.shape[0]
+        train_size = int((data_size-20)*0.9)
+        test_set = data_matrix[:20, :, :, :]
+        train_set = data_matrix[20:20+train_size, :, :, :]
+        valid_set = data_matrix[20+train_size:, :, :, :]
+        data_dict['test_'+dirname] = test_set
+        data_dict['train_'+dirname] = train_set
+        data_dict['valid_'+dirname] = valid_set
+    return data_dict
+        
 
 def generate_matrix(path, img_size):
     data_matrix = np.empty((0, img_size*img_size), dtype=float)
