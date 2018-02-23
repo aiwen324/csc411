@@ -174,9 +174,9 @@ def calculate_data(model, x_test, x_valid, test_y, valid_y, y_test_classes, y_va
 #os.mkdir('cropped')
 # conver_img([32, 32])
 # conver_img([64, 64])
-data_dict = generate_dataset()
+#data_dict = generate_dataset()
 # ======================= Part 8 ===========================
-acts = ['bracco', 'gilpin', 'harmon', 'baldwin', 'hader', 'carell']
+#acts = ['bracco', 'gilpin', 'harmon', 'baldwin', 'hader', 'carell']
 #train_x, train_y = get_set(data_dict, "train", 32, acts)
 #test_x, test_y = get_set(data_dict, 'test', 32, acts)
 #valid_x, valid_y = get_set(data_dict, 'valid', 32, acts)
@@ -609,41 +609,55 @@ model_to_train = nn.Sequential(
 loss_fn = torch.nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model_to_train.parameters(), lr=learning_rate)
 # Extracting data from AlexNet, Caching it
-print "Calculating input data from AlexNet features net ................"
+# print "Calculating input data from AlexNet features net ................"
 #x_whole = Variable(torch.from_numpy(train_x_whole), requires_grad=False).type(dtype_float)
 #y_classes_whole = Variable(torch.from_numpy(np.argmax(train_y_whole, 1)), requires_grad=False).type(dtype_long)
 #x_whole = pre_load_model.features(x_whole)
 #x_whole = x_whole.view(x_whole.size(0), 256*6*6)
 # Define epoch and seperate data to smaller data
-mini_batch_num = 408
-mini_batch_size = train_x_whole.shape[0]/mini_batch_num
 
-lst = []
-for i in range(mini_batch_num):
-    print "Generating mini batch training data ", i
-    if i != mini_batch_num - 1:
-        xi = Variable(torch.from_numpy(train_x_whole[i*mini_batch_size:(i+1)*mini_batch_size, :,:,:]), requires_grad=False).type(dtype_float)
-        yi_classes = Variable(torch.from_numpy(np.argmax(train_y_whole[i*mini_batch_size:(i+1)*mini_batch_size], 1)), requires_grad=False).type(dtype_long)
-    else:
-        xi = Variable(torch.from_numpy(train_x_whole[i*mini_batch_size:, :,:,:]), requires_grad=False).type(dtype_float)
-        yi_classes = Variable(torch.from_numpy(np.argmax(train_y_whole[i*mini_batch_size:], 1)), requires_grad=False).type(dtype_long)
-    xi = pre_load_model.features(xi)
-    xi = xi.view(xi.size(0), 256*6*6)
-    lst.append((xi, yi_classes))
+#mini_batch_num = 8
+#mini_batch_size = train_x_whole.shape[0]/mini_batch_num
+#
+#lst = []
+#for i in range(mini_batch_num):
+#    print "Generating mini batch training data ", i
+#    if i != mini_batch_num - 1:
+#        xi = Variable(torch.from_numpy(train_x_whole[i*mini_batch_size:(i+1)*mini_batch_size, :,:,:]), requires_grad=False).type(dtype_float)
+#        yi_classes = Variable(torch.from_numpy(np.argmax(train_y_whole[i*mini_batch_size:(i+1)*mini_batch_size], 1)), requires_grad=False).type(dtype_long)
+#    else:
+#        xi = Variable(torch.from_numpy(train_x_whole[i*mini_batch_size:, :,:,:]), requires_grad=False).type(dtype_float)
+#        yi_classes = Variable(torch.from_numpy(np.argmax(train_y_whole[i*mini_batch_size:], 1)), requires_grad=False).type(dtype_long)
+#    xi = pre_load_model.features(xi)
+#    xi = xi.view(xi.size(0), 256*6*6)
+#    lst.append((xi, yi_classes))
+#
+#for t in range(100):
+#    print "Beginning {}th iteration".format(str(t))
+#    for i in range(mini_batch_num):
+#        x = lst[i][0]
+#        y_classes = lst[i][1]
+#        y_pred = model_to_train(x)
+#        loss = loss_fn(y_pred, y_classes)
+#        model_to_train.zero_grad()  # Zero out the previous gradient computation
+#        loss.backward(retain_graph=True)    # Compute the gradient
+#        optimizer.step()   # Use the gradient information to
+x = Variable(torch.from_numpy(train_x_whole), requires_grad=False).type(dtype_float)
+x = pre_load_model.features(x)
+x = x.view(x.size(0), 256*6*6)
+y_classes = Variable(torch.from_numpy(np.argmax(train_y_whole, 1)), requires_grad=False).type(dtype_long)
+#for t in range(100):
+#    print t
+#    y_pred = model_to_train(x)
+#    loss = loss_fn(y_pred, y_classes)
+#    
+#    model_to_train.zero_grad()
+#    loss.backward(retain_graph=True)
+#    optimizer.step()
 
-for t in range(100):
-    print "Beginning {}th iteration".format(str(t))
-    for i in range(mini_batch_num):
-        x = lst[i][0]
-        y_classes = lst[i][1]
-        y_pred = model_to_train(x)
-        loss = loss_fn(y_pred, y_classes)
-        model_to_train.zero_grad()  # Zero out the previous gradient computation
-        loss.backward(retain_graph=True)    # Compute the gradient
-        optimizer.step()   # Use the gradient information to
-
-x_test = Variable(torch.from_numpy(test_x), requires_grad=False).type(dtype_float)
-x_test = pre_load_model.features(x_test)
-x_test = x_test.view(x_test.size(0), 256*6*6)
-y_pred = model_to_train(x_test).data.numpy()
-print np.mean(np.argmax(y_pred, 1) == np.argmax(test_y, 1))
+#
+#x_test = Variable(torch.from_numpy(test_x), requires_grad=False).type(dtype_float)
+#x_test = pre_load_model.features(x_test)
+#x_test = x_test.view(x_test.size(0), 256*6*6)
+#y_pred = model_to_train(x_test).data.numpy()
+#print np.mean(np.argmax(y_pred, 1) == np.argmax(test_y, 1))
