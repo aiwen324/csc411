@@ -586,7 +586,6 @@ class MyAlexNet(nn.Module):
 # Generate data from cropped image
 data_dict2 = generate_dataset2()
 
-learning_rate = 1e-3
 torch.manual_seed(0)
 
 pre_load_model = MyAlexNet()
@@ -607,7 +606,8 @@ model_to_train = nn.Sequential(
    nn.Linear(6, 6),
    )
 loss_fn = torch.nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model_to_train.parameters(), lr=learning_rate)
+optimizer = torch.optim.Adam(model_to_train.parameters(), lr=1e-5)
+#optimizer = torch.optim.SGD(model_to_train.parameters(), lr = 1e-4, momentum=0.99, weight_decay=1)
 # Extracting data from AlexNet, Caching it
 # print "Calculating input data from AlexNet features net ................"
 #x_whole = Variable(torch.from_numpy(train_x_whole), requires_grad=False).type(dtype_float)
@@ -645,19 +645,22 @@ optimizer = torch.optim.Adam(model_to_train.parameters(), lr=learning_rate)
 x = Variable(torch.from_numpy(train_x_whole), requires_grad=False).type(dtype_float)
 x = pre_load_model.features(x)
 x = x.view(x.size(0), 256*6*6)
+x = x.data.numpy()
+x = Variable(torch.from_numpy(x), requires_grad=False).type(dtype_float)
 y_classes = Variable(torch.from_numpy(np.argmax(train_y_whole, 1)), requires_grad=False).type(dtype_long)
-#for t in range(100):
-#    print t
-#    y_pred = model_to_train(x)
-#    loss = loss_fn(y_pred, y_classes)
-#    
-#    model_to_train.zero_grad()
-#    loss.backward(retain_graph=True)
-#    optimizer.step()
+for t in range(10000):
+    if t%100 == 0:
+        print t
+    y_pred = model_to_train(x)
+    loss = loss_fn(y_pred, y_classes)
+    
+    model_to_train.zero_grad()
+    loss.backward(retain_graph=True)
+    optimizer.step()
 
-#
-#x_test = Variable(torch.from_numpy(test_x), requires_grad=False).type(dtype_float)
-#x_test = pre_load_model.features(x_test)
-#x_test = x_test.view(x_test.size(0), 256*6*6)
-#y_pred = model_to_train(x_test).data.numpy()
-#print np.mean(np.argmax(y_pred, 1) == np.argmax(test_y, 1))
+
+x_test = Variable(torch.from_numpy(test_x), requires_grad=False).type(dtype_float)
+x_test = pre_load_model.features(x_test)
+x_test = x_test.view(x_test.size(0), 256*6*6)
+y_pred = model_to_train(x_test).data.numpy()
+print np.mean(np.argmax(y_pred, 1) == np.argmax(test_y, 1))
