@@ -298,7 +298,7 @@ acts = ['bracco', 'gilpin', 'harmon', 'baldwin', 'hader', 'carell']
 #        torch.nn.Linear(dim_h, dim_out),
 #    )
 #    loss_fn = torch.nn.CrossEntropyLoss()
-#    print "Resolution: 32x32, doing gradient descent with learning rate: {} ......".format(learning_rate)
+#    print "Resolution: 64x64, doing gradient descent with learning rate: {} ......".format(learning_rate)
 #    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 #    summary = np.empty((0, 6), dtype=float)
 #    for t in range(10000):
@@ -429,6 +429,67 @@ acts = ['bracco', 'gilpin', 'harmon', 'baldwin', 'hader', 'carell']
 #x_valid = Variable(torch.from_numpy(valid_x), requires_grad=False).type(dtype_float)
 #y_valid_classes = Variable(torch.from_numpy(np.argmax(valid_y, 1)), requires_grad=False).type(dtype_long)
 #
+#learning_rate = 1e-4
+#torch.manual_seed(0)
+#model = torch.nn.Sequential(
+#torch.nn.Linear(dim_x, dim_h),
+#torch.nn.ReLU(),
+#torch.nn.Linear(dim_h, dim_out),
+#)
+#loss_fn = torch.nn.CrossEntropyLoss()
+#print "Resolution: 64x64, doing gradient descent with learning rate: {} ......".format(learning_rate)
+#optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+#for t in range(5000):
+#   y_pred = model(x)
+#   loss = loss_fn(y_pred, y_classes)
+#   
+#   model.zero_grad()  # Zero out the previous gradient computation
+#   loss.backward()    # Compute the gradient
+#   optimizer.step()   # Use the gradient information to
+#   # make a step
+#y_pred = model(x_test).data.numpy()
+#print np.mean(np.argmax(y_pred, 1) == np.argmax(test_y, 1))
+## Doing some analysis
+#Weights2 = model[2].weight.data.numpy()
+#bracco_weights = Weights2[5]
+#bracco_highest = np.argmax(bracco_weights)
+#Weights = model[0].weight.data.numpy()
+#bracco_highest_weight = Weights[bracco_highest]
+#fig = figure(1)
+#ax = fig.gca()    
+#heatmap = ax.imshow(bracco_highest_weight.reshape((64,64)), cmap = cm.coolwarm)
+#fig.colorbar(heatmap, shrink = 0.5, aspect=5)
+#fig.savefig('report/part9_64_carell.png')
+#show()
+#gilpin_weights = Weights2[1]
+#gilpin_highest = np.argmax(gilpin_weights)
+#gilpin_highest_weight = Weights[gilpin_highest]
+#fig = figure(1)
+#ax = fig.gca()    
+#heatmap = ax.imshow(gilpin_highest_weight.reshape((64,64)), cmap = cm.coolwarm)
+#fig.colorbar(heatmap, shrink = 0.5, aspect=5)
+#fig.savefig('report/part9_64_gilpin.png')
+#show()
+
+#train_x, train_y = get_set(data_dict, "train", 64, acts)
+#test_x, test_y = get_set(data_dict, 'test', 64, acts)
+#valid_x, valid_y = get_set(data_dict, 'valid', 64, acts)
+## Setting up dimension
+#dim_x = 64*64
+#dim_h = 12
+#dim_out = 6
+#dtype_float = torch.FloatTensor
+#dtype_long = torch.LongTensor
+#
+#x = Variable(torch.from_numpy(train_x), requires_grad=False).type(dtype_float)
+#y_classes = Variable(torch.from_numpy(np.argmax(train_y, 1)), requires_grad=False).type(dtype_long)
+#
+#x_test = Variable(torch.from_numpy(test_x), requires_grad=False).type(dtype_float)
+#y_test_classes = Variable(torch.from_numpy(np.argmax(test_y, 1)), requires_grad=False).type(dtype_long)
+#
+#x_valid = Variable(torch.from_numpy(valid_x), requires_grad=False).type(dtype_float)
+#y_valid_classes = Variable(torch.from_numpy(np.argmax(valid_y, 1)), requires_grad=False).type(dtype_long)
+#
 #mini_batch_num = 3
 #mini_batch_size = train_x.shape[0]/mini_batch_num
 #
@@ -447,7 +508,7 @@ acts = ['bracco', 'gilpin', 'harmon', 'baldwin', 'hader', 'carell']
 #        torch.nn.Linear(dim_h, dim_out),
 #    )
 #    loss_fn = torch.nn.CrossEntropyLoss()
-#    print "Resolution: 32x32, doing gradient descent with learning rate: {} ......".format(learning_rate)
+#    print "Resolution: 64x64, doing gradient descent with learning rate: {} ......".format(learning_rate)
 #    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 #    summary = np.empty((0, 6), dtype=float)
 #    for t in range(10000):
