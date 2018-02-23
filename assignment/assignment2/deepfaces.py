@@ -97,7 +97,16 @@ def get_set(M, set_type, img_size, acts):
         batch_y_s = np.vstack((batch_y_s,   np.tile(one_hot, (M[train_k[k]].shape[0], 1))))
     return batch_xs, batch_y_s
 
+def extract_data(x, pre_load_model):
+    x = Variable(torch.from_numpy(x), requires_grad=False).type(dtype_float)
+    x = pre_load_model.features(x)
+    x = x.view(x.size(0), 256*6*6)
+    x = x.data.numpy()
+    x = Variable(torch.from_numpy(x), requires_grad=False).type(dtype_float)
+    return x
+
 # ======================= Part 10 ===========================
+print "Converting image.............................."
 #conver_img((227, 227, 3))
 class MyAlexNet(nn.Module):
     def load_weights(self):
@@ -152,62 +161,28 @@ model_to_train = nn.Sequential(
    nn.Linear(12, 6),
    )
 loss_fn = torch.nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model_to_train.parameters(), lr=1e-4)
-#optimizer = torch.optim.SGD(model_to_train.parameters(), lr = 1e-4, momentum=0.99, weight_decay=1)
-# Extracting data from AlexNet, Caching it
-# print "Calculating input data from AlexNet features net ................"
-#x_whole = Variable(torch.from_numpy(train_x_whole), requires_grad=False).type(dtype_float)
-#y_classes_whole = Variable(torch.from_numpy(np.argmax(train_y_whole, 1)), requires_grad=False).type(dtype_long)
-#x_whole = pre_load_model.features(x_whole)
-#x_whole = x_whole.view(x_whole.size(0), 256*6*6)
-# Define epoch and seperate data to smaller data
+optimizer = torch.optim.Adam(model_to_train.parameters(), lr=1e-5)
+# optimizer = torch.optim.SGD(model_to_train.parameters(), lr = 1e-5, momentum=0.9)
 
-#mini_batch_num = 8
-#mini_batch_size = train_x_whole.shape[0]/mini_batch_num
-#
-#lst = []
-#for i in range(mini_batch_num):
-#    print "Generating mini batch training data ", i
-#    if i != mini_batch_num - 1:
-#        xi = Variable(torch.from_numpy(train_x_whole[i*mini_batch_size:(i+1)*mini_batch_size, :,:,:]), requires_grad=False).type(dtype_float)
-#        yi_classes = Variable(torch.from_numpy(np.argmax(train_y_whole[i*mini_batch_size:(i+1)*mini_batch_size], 1)), requires_grad=False).type(dtype_long)
-#    else:
-#        xi = Variable(torch.from_numpy(train_x_whole[i*mini_batch_size:, :,:,:]), requires_grad=False).type(dtype_float)
-#        yi_classes = Variable(torch.from_numpy(np.argmax(train_y_whole[i*mini_batch_size:], 1)), requires_grad=False).type(dtype_long)
-#    xi = pre_load_model.features(xi)
-#    xi = xi.view(xi.size(0), 256*6*6)
-#    lst.append((xi, yi_classes))
-#
-#for t in range(100):
-#    print "Beginning {}th iteration".format(str(t))
-#    for i in range(mini_batch_num):
-#        x = lst[i][0]
-#        y_classes = lst[i][1]
-#        y_pred = model_to_train(x)
-#        loss = loss_fn(y_pred, y_classes)
-#        model_to_train.zero_grad()  # Zero out the previous gradient computation
-#        loss.backward(retain_graph=True)    # Compute the gradient
-#        optimizer.step()   # Use the gradient information to
-x = Variable(torch.from_numpy(train_x_whole), requires_grad=False).type(dtype_float)
-x = pre_load_model.features(x)
-x = x.view(x.size(0), 256*6*6)
-x = x.data.numpy()
-x = Variable(torch.from_numpy(x), requires_grad=False).type(dtype_float)
+
+print "Extraacting data from features........"
+x = extract_data(train_x_whole, pre_load_model)
 y_classes = Variable(torch.from_numpy(np.argmax(train_y_whole, 1)), requires_grad=False).type(dtype_long)
+x_valid = extract_data(valid_x, pre_load_model)
 for t in range(10000):
     y_pred = model_to_train(x)
     loss = loss_fn(y_pred, y_classes)
     
     if t % 20 == 0:
-        print "Iteration " + str(t) + " lost is: " + str(loss.data[0])
-
+        y_valid_pred = model_to_train(x_valid).data.numpy()
+        print "Iteration " + str(t) + " loss is: " + str(loss.data[0])
+        print "Performacne on valid set: " + str(np.mean(np.argmax(y_valid_pred, 1) == np.argmax(valid_y, 1)))
     model_to_train.zero_grad()
     loss.backward(retain_graph=True)
     optimizer.step()
 
 
-x_test = Variable(torch.from_numpy(test_x), requires_grad=False).type(dtype_float)
-x_test = pre_load_model.features(x_test)
-x_test = x_test.view(x_test.size(0), 256*6*6)
+print "Calculating performacne.................."
+x_test = extract_data(test_x, pre_load_model)
 y_pred = model_to_train(x_test).data.numpy()
-print "performacne on test set is: " + str(np.mean(np.argmax(y_pred, 1) == np.argmax(test_y, 1)))
+print "Performacne on test set is: " + str(np.mean(np.argmax(y_pred, 1) == np.argmax(test_y, 1)))
