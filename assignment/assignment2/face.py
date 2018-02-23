@@ -554,95 +554,96 @@ acts = ['bracco', 'gilpin', 'harmon', 'baldwin', 'hader', 'carell']
 
 # ======================= Part 10 ===========================
 #conver_img2((227, 227, 3))
-# class MyAlexNet(nn.Module):
-#     def load_weights(self):
-#         an_builtin = torchvision.models.alexnet(pretrained=True)
+class MyAlexNet(nn.Module):
+    def load_weights(self):
+        an_builtin = torchvision.models.alexnet(pretrained=True)
         
-#         features_weight_i = [0, 3, 6, 8, 10]
-#         for i in features_weight_i:
-#             self.features[i].weight = an_builtin.features[i].weight
-#             self.features[i].bias = an_builtin.features[i].bias
+        features_weight_i = [0, 3, 6, 8, 10]
+        for i in features_weight_i:
+            self.features[i].weight = an_builtin.features[i].weight
+            self.features[i].bias = an_builtin.features[i].bias
 
-#     def __init__(self, num_classes=1000):
-#         super(MyAlexNet, self).__init__()
-#         self.features = nn.Sequential(
-#             nn.Conv2d(3, 64, kernel_size=11, stride=4, padding=2),
-#             nn.ReLU(inplace=True),
-#             nn.MaxPool2d(kernel_size=3, stride=2),
-#             nn.Conv2d(64, 192, kernel_size=5, padding=2),
-#             nn.ReLU(inplace=True),
-#             nn.MaxPool2d(kernel_size=3, stride=2),
-#             nn.Conv2d(192, 384, kernel_size=3, padding=1),
-#             nn.ReLU(inplace=True),
-#             nn.Conv2d(384, 256, kernel_size=3, padding=1),
-#             nn.ReLU(inplace=True),
-#             nn.Conv2d(256, 256, kernel_size=3, padding=1),
-#             nn.ReLU(inplace=True),
-#             nn.MaxPool2d(kernel_size=3, stride=2),
-#         )
+    def __init__(self, num_classes=1000):
+        super(MyAlexNet, self).__init__()
+        self.features = nn.Sequential(
+            nn.Conv2d(3, 64, kernel_size=11, stride=4, padding=2),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=3, stride=2),
+            nn.Conv2d(64, 192, kernel_size=5, padding=2),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=3, stride=2),
+            nn.Conv2d(192, 384, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(384, 256, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(256, 256, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=3, stride=2),
+        )
         
-#         self.load_weights()
+        self.load_weights()
 
-# # Generate data from cropped image
-# data_dict2 = generate_dataset2()
+# Generate data from cropped image
+data_dict2 = generate_dataset2()
 
-# learning_rate = 1e-3
-# torch.manual_seed(0)
+learning_rate = 1e-3
+torch.manual_seed(0)
 
-# pre_load_model = MyAlexNet()
-# pre_load_model.eval()
+pre_load_model = MyAlexNet()
+pre_load_model.eval()
 
-# dtype_float = torch.FloatTensor
-# dtype_long = torch.LongTensor
-# # train_size is 408 here
-# # Get matrix from dictionary data_dict2 with specified acts
-# acts = ['bracco', 'gilpin', 'harmon', 'baldwin', 'hader', 'carell']
-# train_x_whole, train_y_whole = get_set2(data_dict2, 'train', (3, 227, 227), acts)
-# test_x, test_y = get_set2(data_dict2, 'test', (3,227,227), acts)
-# valid_x, valid_y = get_set2(data_dict2, 'valid', (3,227,227), acts)
-# # Define the model we need to train
-# model_to_train = nn.Sequential(
-#    nn.Linear(256*6*6, 6),
-#    nn.ReLU(),
-#    nn.Linear(6, 6),
-#    )
-# loss_fn = torch.nn.CrossEntropyLoss()
-# optimizer = torch.optim.Adam(model_to_train.parameters(), lr=learning_rate)
-# # Extracting data from AlexNet, Caching it
-# print "Calculating input data from AlexNet features net ................"
-# x_whole = Variable(torch.from_numpy(train_x_whole), requires_grad=False).type(dtype_float)
-# y_classes_whole = Variable(torch.from_numpy(np.argmax(train_y_whole, 1)), requires_grad=False).type(dtype_long)
-# x_whole = pre_load_model.features(x_whole)
-# x_whole = x_whole.view(x_whole.size(0), 256*6*6)
-# # Define epoch and seperate data to smaller data
-# epoch = 8
-# mini_batch_size = train_x_whole.shape[0]/epoch
+dtype_float = torch.FloatTensor
+dtype_long = torch.LongTensor
+# train_size is 408 here
+# Get matrix from dictionary data_dict2 with specified acts
+acts = ['bracco', 'gilpin', 'harmon', 'baldwin', 'hader', 'carell']
+train_x_whole, train_y_whole = get_set2(data_dict2, 'train', (3, 227, 227), acts)
+test_x, test_y = get_set2(data_dict2, 'test', (3,227,227), acts)
+valid_x, valid_y = get_set2(data_dict2, 'valid', (3,227,227), acts)
+# Define the model we need to train
+model_to_train = nn.Sequential(
+   nn.Linear(256*6*6, 6),
+   nn.ReLU(),
+   nn.Linear(6, 6),
+   )
+loss_fn = torch.nn.CrossEntropyLoss()
+optimizer = torch.optim.Adam(model_to_train.parameters(), lr=learning_rate)
+# Extracting data from AlexNet, Caching it
+print "Calculating input data from AlexNet features net ................"
+#x_whole = Variable(torch.from_numpy(train_x_whole), requires_grad=False).type(dtype_float)
+#y_classes_whole = Variable(torch.from_numpy(np.argmax(train_y_whole, 1)), requires_grad=False).type(dtype_long)
+#x_whole = pre_load_model.features(x_whole)
+#x_whole = x_whole.view(x_whole.size(0), 256*6*6)
+# Define epoch and seperate data to smaller data
+mini_batch_num = 408
+mini_batch_size = train_x_whole.shape[0]/mini_batch_num
 
-# lst = []
-# for i in range(epoch):
-#     print "Generating mini batch training data ", i
-#     if i != epoch - 1:
-#         xi = x_whole[i*mini_batch_size:(i+1)*mini_batch_size, :]
-#         yi_classes = y_classes_whole[i*mini_batch_size:(i+1)*mini_batch_size]
-#     else:
-#         xi = x_whole[i*mini_batch_size:, :]
-#         yi_classes = y_classes_whole[i*mini_batch_size:]
-#     lst.append((xi, yi_classes))
+lst = []
+for i in range(mini_batch_num):
+    print "Generating mini batch training data ", i
+    if i != mini_batch_num - 1:
+        xi = Variable(torch.from_numpy(train_x_whole[i*mini_batch_size:(i+1)*mini_batch_size, :,:,:]), requires_grad=False).type(dtype_float)
+        yi_classes = Variable(torch.from_numpy(np.argmax(train_y_whole[i*mini_batch_size:(i+1)*mini_batch_size], 1)), requires_grad=False).type(dtype_long)
+    else:
+        xi = Variable(torch.from_numpy(train_x_whole[i*mini_batch_size:, :,:,:]), requires_grad=False).type(dtype_float)
+        yi_classes = Variable(torch.from_numpy(np.argmax(train_y_whole[i*mini_batch_size:], 1)), requires_grad=False).type(dtype_long)
+    xi = pre_load_model.features(xi)
+    xi = xi.view(xi.size(0), 256*6*6)
+    lst.append((xi, yi_classes))
 
-# for t in range(100):
-#     print "Beginning {}th iteration".format(str(t))
-#     for i in range(epoch):
-#         print i
-#         x = lst[i][0]
-#         y_classes = lst[i][1]
-#         y_pred = model_to_train(x)
-#         loss = loss_fn(y_pred, y_classes)
-#         model_to_train.zero_grad()  # Zero out the previous gradient computation
-#         loss.backward(retain_graph=True)    # Compute the gradient
-#         optimizer.step()   # Use the gradient information to
+for t in range(100):
+    print "Beginning {}th iteration".format(str(t))
+    for i in range(mini_batch_num):
+        x = lst[i][0]
+        y_classes = lst[i][1]
+        y_pred = model_to_train(x)
+        loss = loss_fn(y_pred, y_classes)
+        model_to_train.zero_grad()  # Zero out the previous gradient computation
+        loss.backward(retain_graph=True)    # Compute the gradient
+        optimizer.step()   # Use the gradient information to
 
-# x_test = Variable(torch.from_numpy(test_x), requires_grad=False).type(dtype_float)
-# x_test = pre_load_model.features(x_test)
-# x_test = x_test.view(x_test.size(0), 256*6*6)
-# y_pred = model_to_train(x_test).data.numpy()
-# print np.mean(np.argmax(y_pred, 1) == np.argmax(test_y, 1))
+x_test = Variable(torch.from_numpy(test_x), requires_grad=False).type(dtype_float)
+x_test = pre_load_model.features(x_test)
+x_test = x_test.view(x_test.size(0), 256*6*6)
+y_pred = model_to_train(x_test).data.numpy()
+print np.mean(np.argmax(y_pred, 1) == np.argmax(test_y, 1))
