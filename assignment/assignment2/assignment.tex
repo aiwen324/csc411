@@ -310,51 +310,55 @@ This means the complexity without back propagation is $O(N^2)$
 
 % ------------------------- Part 8 -------------------------
 \section*{Part 8}
-I use a network with 32*32 or 64*64 input units, 6 output units, and one hidden layer. In that hidden layer, there are 12 hidden units, the activate function is ReLU. I tried both 32x32 and 64x64 to train the network, and I found the 32x32 has better performance. I guess the reason is 64x64 resolution cause overfitting. Also, learning rate with $10^{-4}$ has best performance on test set. Here are the final performance for each learning rate.
-\begin{lstlisting}
-Resolution: 32x32, doing gradient descent with learning rate: 0.01 ......
-0.758333333333
-Resolution: 32x32, doing gradient descent with learning rate: 0.001 ......
-0.783333333333
-Resolution: 32x32, doing gradient descent with learning rate: 0.0001 ......
-0.791666666667
-Resolution: 64x64, doing gradient descent with learning rate: 0.0001 ......
-0.641666666667
-Resolution: 64x64, doing gradient descent with learning rate: 1e-05 ......
-0.725
-Resolution: 64x64, doing gradient descent with learning rate: 1e-06 ......
-0.525
-\end{lstlisting}
+I use a network with 32*32 or 64*64 input units, 6 output units, and one hidden layer. In that hidden layer, there are 12 hidden units, the activate function is ReLU. I tried both 32x32 and 64x64 to train the network. For 32x32 input, I set 64 hidden units, for 64x64 input, I set 32 hidden units. And I decide to use Adam optimizer. Since here the data is not very big, so I just set number of mini-batches as small as possible. Here are the final performance for each learning rate. The final performance on test set is around $75\%$ to $85\%$ if the learning rate is not too bad.
 \begin{figure}[h]
-    \subfloat[rate 0.01]{{\includegraphics[width=0.28\textwidth]{report/part8_curves_performance1.png}}}
+    \subfloat[rate 1e-3]{{\includegraphics[width=0.28\textwidth]{report/part832_minibatch_loss1e-3.png}}}
     \qquad
-    \subfloat[rate 0.001]{{\includegraphics[width=0.28\textwidth]{report/part8_curves_performance2.png}}}
+    \subfloat[rate 1e-4]{{\includegraphics[width=0.28\textwidth]{report/part832_minibatch_loss1e-4.png}}}
     \qquad
-    \subfloat[rate 0.0001]{{\includegraphics[width=0.28\textwidth]{report/part8_curves_performance3.png}}}
+    \subfloat[rate 1e-5]{{\includegraphics[width=0.28\textwidth]{report/part832_minibatch_loss1e-05.png}}}
     \caption{Resolution 32x32, learning curve with rate 0.01, 0.001, 0.0001}
 \end{figure}
 \begin{figure}[h]
-    \subfloat[rate 0.01]{{\includegraphics[width=0.28\textwidth]{report/part8_curves_loss1.png}}}
+    \subfloat[rate 1e-3]{{\includegraphics[width=0.28\textwidth]{report/part832_minibatch_performance1e-3.png}}}
     \qquad
-    \subfloat[rate 0.001]{{\includegraphics[width=0.28\textwidth]{report/part8_curves_loss2.png}}}
+    \subfloat[rate 1e-4]{{\includegraphics[width=0.28\textwidth]{report/part832_minibatch_performance1e-4.png}}}
     \qquad
-    \subfloat[rate 0.0001]{{\includegraphics[width=0.28\textwidth]{report/part8_curves_loss3.png}}}
+    \subfloat[rate 1e-5]{{\includegraphics[width=0.28\textwidth]{report/part832_minibatch_performance1e-05.png}}}
     \caption{Resolution 32x32, learning curve with rate 0.01, 0.001, 0.0001}
 \end{figure}
 \begin{figure}[h]
-    \subfloat[rate 0.0001]{{\includegraphics[width=0.28\textwidth]{report/part8_64curves_loss1.png}}}
+    \subfloat[rate 1e-4]{{\includegraphics[width=0.28\textwidth]{report/part864_minibatch_loss1e-4.png}}}
     \qquad
-    \subfloat[rate $10^{-5}$]{{\includegraphics[width=0.28\textwidth]{report/part8_64curves_loss2.png}}}
-    \qquad
-    \subfloat[rate $10^{-6}$]{{\includegraphics[width=0.28\textwidth]{report/part8_64curves_loss3.png}}}
+    \subfloat[rate 1e-5]{{\includegraphics[width=0.28\textwidth]{report/part864_minibatch_loss1e-05.png}}}
     \caption{Resolution 64x64, learning curve with rate $10^{-4},10^{-5},10^{-6}$}
 \end{figure}
 \begin{figure}[H]
-    \subfloat[rate 0.0001]{{\includegraphics[width=0.28\textwidth]{report/part8_64curves_performance1.png}}}
+    \subfloat[rate 1e-4]{{\includegraphics[width=0.28\textwidth]{report/part864_minibatch_performance1e-4.png}}}
     \qquad
-    \subfloat[rate $10^{-5}$]{{\includegraphics[width=0.28\textwidth]{report/part8_64curves_performance2.png}}}
-    \qquad
-    \subfloat[rate $10^{-6}$]{{\includegraphics[width=0.28\textwidth]{report/part8_64curves_performance3.png}}}
-    \caption{Resolution 64x64, learning curve with rate $10^{-4},10^{-5},10^{-6}$}
+    \subfloat[rate 1e-5]{{\includegraphics[width=0.28\textwidth]{report/part864_minibatch_performance1e-05.png}}}
+    \caption{Resolution 64x64, learning curve with rate $10^{-4},10^{-5}$}
 \end{figure}
+
+% ------------------------- Part 9 -------------------------
+\section*{Part 9}
+In this section, I actually change the number of mini-batches to 1. I also use the weight from the network for 64x64 size images cuz that somehow give more information. Then the strategy to find the most useful weights is the following. 
+\begin{enumerate}
+    \item Choose 2 actors, and look at the output nodes with respect to that actors
+    \item For each actor, inspect the weights connected from hidden layer to that node
+    \item Find the weight with hightest value, get the index of that weight, say it is k
+    \item Inspect the $k^{th}$ node in the hidden layer, get the weight matrix from input layer to that node
+    \item Convert that matrix to the image
+\end{enumerate}
+Here is my result, I choose gilpin and carell
+\begin{figure}[H]
+    \subfloat[gilpin]{{\includegraphics[width=0.45\textwidth]{report/part9_64_gilpin.png}}}
+    \qquad
+    \subfloat[carell]{{\includegraphics[width=0.45\textwidth]{report/part9_64_carell.png}}}
+    \caption{Image of Weights}
+\end{figure}
+
+% ------------------------- Part 10 -------------------------
+\section*{Part 10}
+I construct a network whose input size matches the output from AlexNet.feature which is 256*6*6, I use 12 hidden units in the hidden layer, and the activate function is ReLU. I use Adam optimizer, with learning rate 1e-5, get $91.6\%$ performance on test set.
 \end{document}
