@@ -107,7 +107,7 @@ def extract_data(x, pre_load_model):
 
 # ======================= Part 10 ===========================
 print "Converting image.............................."
-#conver_img((227, 227, 3))
+conver_img((227, 227, 3))
 class MyAlexNet(nn.Module):
     def load_weights(self):
         an_builtin = torchvision.models.alexnet(pretrained=True)

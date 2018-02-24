@@ -70,66 +70,7 @@ def sha256_checksum(filename, block_size=65536):
     return sha256.hexdigest()
 
 
-# testfile = urllib.URLopener()
-# os.mkdir('uncropped')
-# for a in actresses_fullname:
-#     # Parsing Lorraine Bracco
-#     name = a.split()[1].lower()
-#     if not os.path.exists("uncropped/"+name) or not os.path.isdir("uncropped/"+name):
-#         os.mkdir("uncropped/"+name)
-#     fname = str(name) + ".txt"
-#     f = open(fname, "w")
-#     i = 0
-#     for line in open("facescrub_actresses.txt"):
-#         if a in line:
-#             filename = name+str(i)+'.'+line.split()[4].split('.')[-1]
-#             #A version without timeout (uncomment in case you need to 
-#             #unsupress exceptions, which timeout() does)
-#             #testfile.retrieve(line.split()[4], "uncropped/"+filename)
-#             #timeout is used to stop downloading images which take too long to download
-#             filepath = "uncropped/"+name+"/"+filename
-#             timeout(testfile.retrieve, (line.split()[4], filepath), {}, 30)
-#             if not os.path.isfile("uncropped/"+name+"/"+filename):
-#                 continue
-#             hashword = sha256_checksum(filepath)
-#             if hashword != line.split()[6]:
-#             	os.remove(filepath)
-#             	print "Detecting unmatched HASH!!!!!!"
-#             	continue
-#             print filename
-#             line_to_wrt = line.split()[1] + " " + filename + "\t" + line.split()[4] + "\t" + line.split()[5] + '\n'
-#             f.write(line_to_wrt)
-#             i += 1
-#     f.close()
 
-# for a in male_actors_fullname:
-#     name = a.split()[1].lower()
-#     if not os.path.exists("uncropped/"+name) or not os.path.isdir("uncropped/"+name):
-#         os.mkdir("uncropped/"+name)
-#     fname = str(name) + ".txt"
-#     f = open(fname, "w")
-#     i = 0
-#     for line in open("facescrub_actors.txt"):
-#         if a in line:
-#             filename = name+str(i)+'.'+line.split()[4].split('.')[-1]
-#             #A version without timeout (uncomment in case you need to 
-#             #unsupress exceptions, which timeout() does)
-#             #testfile.retrieve(line.split()[4], "uncropped/"+filename)
-#             #timeout is used to stop downloading images which take too long to download
-#             filepath = "uncropped/"+name+"/"+filename
-#             timeout(testfile.retrieve, (line.split()[4], filepath), {}, 30)
-#             if not os.path.isfile("uncropped/"+name+"/"+filename):
-#                 continue
-#             print filename
-#             hashword = sha256_checksum(filepath)
-#             if hashword != line.split()[6]:
-#             	os.remove(filepath)
-#             	print "Detecting unmatched HASH!!!!!!"
-#             	continue
-#             line_to_wrt = line.split()[1] + " " + filename + "\t" + line.split()[4] + "\t" + line.split()[5] + '\n'
-#             f.write(line_to_wrt)
-#             i += 1
-#     f.close()
 
 def conver_img(img_size):
     for actor in os.listdir("uncropped"):
@@ -194,3 +135,69 @@ def conver_img2(img_size):
                 f = open(actor + "_err.txt", "a")
                 f.write(filename + '\n')
                 f.close()
+                
+
+
+
+
+if __name__ == '__main__':
+    testfile = urllib.URLopener()
+    os.mkdir('uncropped')
+    for a in actresses_fullname:
+        # Parsing Lorraine Bracco
+        name = a.split()[1].lower()
+        if not os.path.exists("uncropped/"+name) or not os.path.isdir("uncropped/"+name):
+            os.mkdir("uncropped/"+name)
+        fname = str(name) + ".txt"
+        f = open(fname, "w")
+        i = 0
+        for line in open("facescrub_actresses.txt"):
+            if a in line:
+                filename = name+str(i)+'.'+line.split()[4].split('.')[-1]
+                #A version without timeout (uncomment in case you need to 
+                #unsupress exceptions, which timeout() does)
+                #testfile.retrieve(line.split()[4], "uncropped/"+filename)
+                #timeout is used to stop downloading images which take too long to download
+                filepath = "uncropped/"+name+"/"+filename
+                timeout(testfile.retrieve, (line.split()[4], filepath), {}, 30)
+                if not os.path.isfile("uncropped/"+name+"/"+filename):
+                    continue
+                hashword = sha256_checksum(filepath)
+                if hashword != line.split()[6]:
+                	os.remove(filepath)
+                	print "Detecting unmatched HASH!!!!!!"
+                	continue
+                print filename
+                line_to_wrt = line.split()[1] + " " + filename + "\t" + line.split()[4] + "\t" + line.split()[5] + '\n'
+                f.write(line_to_wrt)
+                i += 1
+        f.close()
+
+    for a in male_actors_fullname:
+        name = a.split()[1].lower()
+        if not os.path.exists("uncropped/"+name) or not os.path.isdir("uncropped/"+name):
+            os.mkdir("uncropped/"+name)
+        fname = str(name) + ".txt"
+        f = open(fname, "w")
+        i = 0
+        for line in open("facescrub_actors.txt"):
+            if a in line:
+                filename = name+str(i)+'.'+line.split()[4].split('.')[-1]
+                #A version without timeout (uncomment in case you need to 
+                #unsupress exceptions, which timeout() does)
+                #testfile.retrieve(line.split()[4], "uncropped/"+filename)
+                #timeout is used to stop downloading images which take too long to download
+                filepath = "uncropped/"+name+"/"+filename
+                timeout(testfile.retrieve, (line.split()[4], filepath), {}, 30)
+                if not os.path.isfile("uncropped/"+name+"/"+filename):
+                    continue
+                print filename
+                hashword = sha256_checksum(filepath)
+                if hashword != line.split()[6]:
+                	os.remove(filepath)
+                	print "Detecting unmatched HASH!!!!!!"
+                	continue
+                line_to_wrt = line.split()[1] + " " + filename + "\t" + line.split()[4] + "\t" + line.split()[5] + '\n'
+                f.write(line_to_wrt)
+                i += 1
+        f.close()
