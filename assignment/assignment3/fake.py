@@ -1,4 +1,6 @@
 import os
+import numpy as np
+
 
 def read_news(f):
 	word_dict = dict()
@@ -12,7 +14,7 @@ def read_news(f):
 	return word_dict
 
 
-
+# ================================= Part 1 ====================================
 real_news_f = open('clean_real.txt', 'r')
 fake_news_f = open('clean_fake.txt', 'r')
 real_word_dict = read_news(real_news_f)
@@ -31,114 +33,19 @@ for val in fake_word_dict.values():
 	
 l1 = sort_real_keys[:50]
 l2 = sort_fake_keys[:50]
+print "Top 50 word in real news that are not top 50 in fake news"
 for key in l1:
 	if key not in l2:
-		print key
+		print key, np.true_divide(real_word_dict[key], real_total)
 print "========================================"
+print "Top 50 word in fake news that are not top 50 in fake news"
 for key in l2:
 	if key not in l1:
-		print key
-"""
-trump
-donald
-to
-us
-trumps
-in
-on
-of
-says
-for
-the
-and
-with
-a
-election
-clinton
-north
-as
-korea
-is
-ban
-at
-will
-president
-russia
-be
-over
-turnbull
-travel
-after
-deal
-white
-by
-wall
-house
-from
-first
-what
-not
-he
-new
-china
-has
-climate
-obama
-australia
-about
-how
-meeting
-call
-"""
-"""
-trump
-the
-to
-in
-donald
-of
-for
-a
-and
-on
-is
-hillary
-clinton
-with
-will
-by
-he
-election
-just
-as
-new
-president
-you
-it
-obama
-his
-if
-at
-america
-are
-be
-that
-win
-from
-victory
-has
-says
-what
-about
-supporters
-campaign
-news
-not
-vote
-us
-after
-world
-why
-i
-anti
-"""
+		print key, np.true_divide(fake_word_dict[key], fake_total)
+
+for key in sort_real_keys[:100]:
+    if key not in fake_word_dict.keys():
+        print key
+        
+# =============================== Part 2 ======================================
+# Comment: Use numpy permutation to split the training set
