@@ -3,6 +3,7 @@ import numpy as np
 from scipy.io import savemat
 from scipy.io import loadmat
 from pylab import *
+import matplotlib.pyplot as plt
 from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 from torch.autograd import Variable
 import torch
@@ -80,9 +81,6 @@ def calculate_log_probability_array(train_word_dict, train_news_num, word_list, 
             neg_prob_arr[counter] = log(1-np.true_divide(m*p_hat, train_news_num+m))
         counter += 1
     return prob_arr, neg_prob_arr
-            
-def calculate_accuracy():
-    return None
 
 def Get_stopword_index(word_list):
     counter = 0
@@ -96,6 +94,8 @@ def Get_stopword_index(word_list):
     
     
 # ================================= Part 1 ====================================
+if not os.path.exists('report') or not os.path.isdir('report'):
+   os.mkdir('report')
 real_news_f = open('clean_real.txt', 'r')
 fake_news_f = open('clean_fake.txt', 'r')
 # Get the word_counter dictionary and amount of news
@@ -233,13 +233,107 @@ print "presence most strongly predict fake words: ", [word_list[i] for i in modi
 print "absence most strongly predict fake words: ", [word_list[i] for i in modified_lowest_fake_index]
 
 # =============================== Part 4 ======================================
-dim_x = len(word_list)
+# We will use Pytorch to do this part
+
+""" Function that calculate the accuracy """
+def calculate_accuracy(y_pred, y_target):
+    neg_y_pred = np.ones(y_pred.shape[0]) - y_pred
+    # print neg_y_pred
+    pred_stack = np.vstack((neg_y_pred, y_pred))
+    # print pred_stack
+    pred = np.argmax(pred_stack, axis=0)
+    # print pred
+    return np.mean(pred == y_target)
+# Loading train set from data_set dictionary
+# train
+real_train_x = data_set['real_train']
+real_train_y = np.ones(real_train_x.shape[0], dtype=int)
+fake_train_x = data_set['fake_train']
+fake_train_y = np.zeros(fake_train_x.shape[0], dtype=int)
+# valid
+real_valid_x = data_set['real_valid']
+real_valid_y = np.ones(real_valid_x.shape[0], dtype=int)
+fake_valid_x = data_set['fake_valid']
+fake_valid_y = np.zeros(fake_valid_x.shape[0], dtype=int)
+# test
+real_test_x = data_set['real_test']
+real_test_y = np.ones(real_test_x.shape[0], dtype=int)
+fake_test_x = data_set['fake_test']
+fake_test_y = np.zeros(fake_test_x.shape[0], dtype=int)
+
+# Combine real and fake train set
+train_x = np.vstack((real_train_x, fake_train_x))
+valid_x = np.vstack((real_valid_x, fake_valid_x))
+test_x = np.vstack((real_test_x, fake_test_x))
+train_y = np.hstack((real_train_y, fake_train_y))
+valid_y = np.hstack((real_valid_y, fake_valid_y))
+test_y = np.hstack((real_test_y, fake_test_y))
+
+# Set the dimension
+dim_x = real_train_x.shape[1]
 dim_out = 1
+
+# Transform train set to pytorch tensors
+dtype_float = torch.FloatTensor
+dtype_long = torch.LongTensor
+
+train_x_tensor = Variable(torch.from_numpy(train_x), requires_grad=False).type(dtype_float)
+train_y_tensor = Variable(torch.from_numpy(train_y), requires_grad=False).type(dtype_float)
+
+valid_x_tensor = Variable(torch.from_numpy(valid_x), requires_grad=False).type(dtype_float)
+# valid_y_tensor = Variable(torch.from_numpy(valid_y), requires_grad=False).type(dtype_float)
+
+test_x_tensor = Variable(torch.from_numpy(test_x), requires_grad=False).type(dtype_float)
+# test_y_tensor = Variable(torch.from_numpy(test_y), requires_grad=False).type(dtype_float)
+
+# Set up Pytorch model
 torch.manual_seed(0)
 model = torch.nn.Sequential(
 torch.nn.Linear(dim_x, dim_out),
 torch.nn.Sigmoid()
 )
 loss_fn = torch.nn.BCELoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
-x = Variable(torch.from_numpy())
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-3)
+#optimizer = torch.optim.SGD(model.parameters(), lr=5e-5, weight_decay=1e-3)
+# TODO: Use a numpy array or dictionary to save the performance of valid and training set
+summary = np.empty((0, 2), dtype=float)
+for t in range(3000):
+    train_y_pred = model(train_x_tensor)
+    loss = loss_fn(train_y_pred, train_y_tensor)
+
+    # TODO: Use a numpy array to record the performance
+    if t%50 == 0 or t == 3000 - 1:
+    # TODO: convert valid_pred and test_pred to 0 1 array
+    # TODO: print some message during the gradient descent
+        train_pred_numpy = train_y_pred.data.numpy().flatten()
+        valid_pred = model(valid_x_tensor).data.numpy().flatten()
+        test_pred = model(test_x_tensor).data.numpy().flatten()
+
+        train_perform = calculate_accuracy(train_pred_numpy, train_y)
+        valid_perform = calculate_accuracy(valid_pred, valid_y)
+        test_perform = calculate_accuracy(test_pred, test_y)
+
+        summary = np.vstack((summary, np.array([valid_perform, test_perform])))
+
+        print "Iteration: " + str(t)
+        print "loss is: " + str(loss.data[0])
+        print "train_perform: " + str(train_perform)
+        print "valid_perform: " + str(valid_perform)
+        if t == 3000 - 1:
+            print "final test performance: " + str(test_perform)
+
+    model.zero_grad()
+    loss.backward()
+    optimizer.step()
+
+xs = np.array([50*i for i in range(summary.shape[0])])
+valid_perform_ys = summary[:, 0]
+test_perform_ys = summary[:, 1]
+plt.plot(xs, test_perform_ys, 'g', label='test')
+plt.plot(xs, valid_perform_ys, 'r', label='validate')
+plt.xlabel('iteration')
+plt.ylabel('Performance')
+plt.title("Performance on lr = " + '1e-4')
+plt.legend()
+plt.savefig('report/part4.png')
+plt.show()
