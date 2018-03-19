@@ -9,6 +9,10 @@ from torch.autograd import Variable
 import torch
 import torchvision
 import torch.nn as nn
+from sklearn import tree
+import graphviz
+import commands
+import re
 
 def read_news(f):
     news_counter = 0
@@ -198,39 +202,88 @@ predict_fake_test_bayes = naive_bayes(batch_test, fake_log_prob, neg_fake_log_pr
 combined_predict_test_bayes = np.vstack((predict_fake_test_bayes, predict_real_test_bayes))
 predict_test_array = np.argmax(combined_predict_test_bayes, axis=0)
 print "Accuracy on test set: ", np.mean(predict_test_array == test_target_array)
+# Performance on train set
+real_train = data_set['real_train']
+fake_train = data_set['fake_train']
+train_target_array = np.hstack((np.ones(real_train.shape[0], dtype=int), np.zeros(fake_train.shape[0], dtype=int)))
+batch_train = np.vstack((real_train, fake_train))
+predict_real_train_bayes = naive_bayes(batch_train, real_log_prob, neg_real_log_prob, train_real_prob)
+predict_fake_train_bayes = naive_bayes(batch_train, fake_log_prob, neg_fake_log_prob, train_fake_prob)
+combined_predict_train_bayes = np.vstack((predict_fake_train_bayes, predict_real_train_bayes))
+predict_train_array = np.argmax(combined_predict_train_bayes, axis=0)
+print "Accuracy on train set: ", np.mean(predict_train_array == train_target_array)
 
 # =============================== Part 3a =====================================
-highest_real_index = np.argpartition(real_log_prob, -10)[-10:]
-lowest_real_index = np.argpartition(neg_real_log_prob, -10)[-10:]
-highest_fake_index = np.argpartition(fake_log_prob, -10)[-10:]
-lowest_fake_index = np.argpartition(neg_fake_log_prob, -10)[-10:]
-print "presence most strongly predict real words: ", [word_list[i] for i in highest_real_index]
-print "absence most strongly predict real words: ", [word_list[i] for i in lowest_real_index]
-print "presence most strongly predict fake words: ", [word_list[i] for i in highest_fake_index]
-print "absence most strongly predict fake words: ", [word_list[i] for i in lowest_fake_index]
+# real_log_prob = log(P(x_i|y=real))
+# neg_real_log_prob = log(1-P(x_i|y=real)) = log(P(not x_i|y=real))
+# fake_log_prob = log(P(x_i|y=fake))
+# neg_fake_log_prob = log(1-P(x_i|y=fake)) = log(P(not x_i|y=fake))
+def bayes_rule_calculator(cond_prob1, cond_prob2, prob1, prob2):
+    cond_prob1 = exp(cond_prob1)
+    cond_prob2 = exp(cond_prob2)
+    prob = np.true_divide(np.multiply(cond_prob1,prob1), np.multiply(cond_prob1,prob1)+np.multiply(cond_prob2,prob2))
+    return prob
+
+p_real_given_word = bayes_rule_calculator(real_log_prob, fake_log_prob, train_real_prob, train_fake_prob)
+p_real_given_notword = bayes_rule_calculator(neg_real_log_prob, neg_fake_log_prob, train_real_prob, train_fake_prob)
+p_fake_given_word = bayes_rule_calculator(fake_log_prob, real_log_prob, train_fake_prob, train_real_prob)
+p_fake_given_notword = bayes_rule_calculator(neg_fake_log_prob, neg_real_log_prob, train_fake_prob, train_real_prob)
+# TODO: Print the accuracy
+highest_real_index = np.argsort(p_real_given_word)[-10:]
+lowest_real_index = np.argsort(p_real_given_notword)[-10:]
+highest_fake_index = np.argsort(p_fake_given_word)[-10:]
+lowest_fake_index = np.argsort(p_fake_given_notword)[-10:]
+# highest_real_index = np.argpartition(p_real_given_word, -10)[-10:]
+# lowest_real_index = np.argpartition(neg_real_log_prob, -10)[-10:]
+# highest_fake_index = np.argpartition(fake_log_prob, -10)[-10:]
+# lowest_fake_index = np.argpartition(neg_fake_log_prob, -10)[-10:]
+
+highest_real = [word_list[i] for i in highest_real_index]
+lowest_real = [word_list[i] for i in lowest_real_index]
+highest_fake = [word_list[i] for i in highest_fake_index]
+lowest_fake = [word_list[i] for i in lowest_fake_index]
+highest_real_1 = [(word_list[i], 'probability: '+str(p_real_given_word[i])) for i in highest_real_index]
+lowest_real_1 = [(word_list[i], 'probability: '+str(p_real_given_notword[i])) for i in lowest_real_index]
+highest_fake_1 = [(word_list[i], 'probability: '+str(p_fake_given_word[i])) for i in highest_fake_index]
+lowest_fake_1 = [(word_list[i], 'probability: '+str(p_fake_given_notword[i])) for i in lowest_fake_index]
+print "presence most strongly predict real words: ", highest_real_1, '\n'
+print "absence most strongly predict real words: ", lowest_real_1, '\n'
+print "presence most strongly predict fake words: ", highest_fake_1, '\n'
+print "absence most strongly predict fake words: ", lowest_fake_1
 
 # =============================== Part 3b =====================================
 # Get stopword_lst
 stopword_lst = Get_stopword_index(word_list)
 # Copy a numpy array from original
-modified_real_log_prob = np.copy(real_log_prob)
-modified_neg_real_log_prob = np.copy(neg_real_log_prob)
-modified_fake_log_prob = np.copy(fake_log_prob)
-modified_neg_fake_log_prob = np.copy(neg_fake_log_prob)
+modified_p_real_given_word = np.copy(p_real_given_word)
+modified_p_real_given_notword = np.copy(p_real_given_notword)
+modified_p_fake_given_word = np.copy(p_fake_given_word)
+modified_p_fake_given_notword = np.copy(p_fake_given_notword)
 # Modify the stopword value to -infinity
-modified_real_log_prob[stopword_lst] = float('-inf')
-modified_neg_real_log_prob[stopword_lst] = float('-inf')
-modified_fake_log_prob[stopword_lst] = float('-inf')
-modified_neg_fake_log_prob[stopword_lst] = float('-inf')
+modified_p_real_given_word[stopword_lst] = float('-inf')
+modified_p_real_given_notword[stopword_lst] = float('-inf')
+modified_p_fake_given_word[stopword_lst] = float('-inf')
+modified_p_fake_given_notword[stopword_lst] = float('-inf')
 # Get the index again
-modified_highest_real_index = np.argpartition(modified_real_log_prob, -10)[-10:]
-modified_lowest_real_index = np.argpartition(modified_neg_real_log_prob, -10)[-10:]
-modified_highest_fake_index = np.argpartition(modified_fake_log_prob, -10)[-10:]
-modified_lowest_fake_index = np.argpartition(modified_neg_fake_log_prob, -10)[-10:]
-print "presence most strongly predict real words: ", [word_list[i] for i in modified_highest_real_index]
-print "absence most strongly predict real words: ", [word_list[i] for i in modified_lowest_real_index]
-print "presence most strongly predict fake words: ", [word_list[i] for i in modified_highest_fake_index]
-print "absence most strongly predict fake words: ", [word_list[i] for i in modified_lowest_fake_index]
+modified_highest_real_index = np.argsort(modified_p_real_given_word)[-10:]
+modified_lowest_real_index = np.argsort(modified_p_real_given_notword)[-10:]
+modified_highest_fake_index = np.argsort(modified_p_fake_given_word)[-10:]
+modified_lowest_fake_index = np.argsort(modified_p_fake_given_notword)[-10:]
+
+modified_highest_real = [word_list[i] for i in modified_highest_real_index]
+modified_lowest_real = [word_list[i] for i in modified_lowest_real_index]
+modified_highest_fake = [word_list[i] for i in modified_highest_fake_index]
+modified_lowest_fake = [word_list[i] for i in modified_lowest_fake_index]
+# The object to print
+modified_highest_real_1 = [(word_list[i], 'probability: '+str(modified_p_real_given_word[i])) for i in modified_highest_real_index]
+modified_lowest_real_1 = [(word_list[i], 'probability: '+str(modified_p_real_given_notword[i])) for i in modified_lowest_real_index]
+modified_highest_fake_1 = [(word_list[i], 'probability: '+str(modified_p_fake_given_word[i])) for i in modified_highest_fake_index]
+modified_lowest_fake_1 = [(word_list[i], 'probability: '+str(modified_p_fake_given_notword[i])) for i in modified_lowest_fake_index]
+print "======================================================================="
+print "presence most strongly predict real words: ", modified_highest_real_1, '\n'
+print "absence most strongly predict real words: ", modified_lowest_real_1, '\n'
+print "presence most strongly predict fake words: ", modified_highest_fake_1, '\n'
+print "absence most strongly predict fake words: ", modified_lowest_fake_1
 
 # =============================== Part 4 ======================================
 # We will use Pytorch to do this part
@@ -287,6 +340,7 @@ test_x_tensor = Variable(torch.from_numpy(test_x), requires_grad=False).type(dty
 # test_y_tensor = Variable(torch.from_numpy(test_y), requires_grad=False).type(dtype_float)
 
 # Set up Pytorch model
+iteration_times = 5000
 torch.manual_seed(0)
 model = torch.nn.Sequential(
 torch.nn.Linear(dim_x, dim_out),
@@ -297,12 +351,12 @@ optimizer = torch.optim.Adam(model.parameters(), lr=1e-4, weight_decay=1e-3)
 #optimizer = torch.optim.SGD(model.parameters(), lr=5e-5, weight_decay=1e-3)
 # TODO: Use a numpy array or dictionary to save the performance of valid and training set
 summary = np.empty((0, 2), dtype=float)
-for t in range(3000):
+for t in range(iteration_times):
     train_y_pred = model(train_x_tensor)
     loss = loss_fn(train_y_pred, train_y_tensor)
 
     # TODO: Use a numpy array to record the performance
-    if t%50 == 0 or t == 3000 - 1:
+    if t%50 == 0 or t == iteration_times - 1:
     # TODO: convert valid_pred and test_pred to 0 1 array
     # TODO: print some message during the gradient descent
         train_pred_numpy = train_y_pred.data.numpy().flatten()
@@ -319,7 +373,7 @@ for t in range(3000):
         print "loss is: " + str(loss.data[0])
         print "train_perform: " + str(train_perform)
         print "valid_perform: " + str(valid_perform)
-        if t == 3000 - 1:
+        if t == iteration_times - 1:
             print "final test performance: " + str(test_perform)
 
     model.zero_grad()
@@ -337,3 +391,101 @@ plt.title("Performance on lr = " + '1e-4')
 plt.legend()
 plt.savefig('report/part4.png')
 plt.show()
+
+# =============================== Part 6a =====================================
+net_weight = model[0].weight.data.numpy()
+net_weight = net_weight.flatten()
+highest_thetas_index = np.argsort(net_weight)[-10:]
+highest_thetas = [word_list[i] for i in highest_thetas_index]
+print "Highest 10 thetas index corresponding word: "
+for i in highest_thetas_index:
+    print 'Word: ', word_list[i], '\t theta value: ', net_weight[i] 
+lowest_thetas_index = np.argsort(net_weight)[:10]
+lowest_thetas = [word_list[i] for i in lowest_thetas_index]
+print "Lowest 10 thetas index corresponding word: "
+for i in lowest_thetas_index:
+    print 'Word: ', word_list[i], '\t theta value: ', net_weight[i]
+
+highest_overlap = set(highest_thetas) & (set(highest_real) | set(lowest_fake))
+lowest_overlap = set(lowest_thetas) & (set(lowest_real) | set(highest_fake))
+
+print "Overlap {} words for highest: {}".format(len(highest_overlap), str(highest_overlap))
+print "Overlap {} words for lowest: {}".format(len(lowest_overlap), str(lowest_overlap))
+# =============================== Part 6b =====================================
+stopword_lst = Get_stopword_index(word_list)
+net_weight_copy1 = np.copy(net_weight)
+net_weight_copy1[stopword_lst] = float('-inf')
+highest_thetas_nostopwords_index = np.argsort(net_weight_copy1)[-10:]
+highest_thetas_nostopwords = [word_list[i] for i in highest_thetas_nostopwords_index]
+print "Highest 10 thetas index corresponding word: "
+for i in highest_thetas_nostopwords_index:
+    print 'Word: ', word_list[i], '\t theta value: ', net_weight[i]
+
+net_weight_copy2 = np.copy(net_weight)
+net_weight_copy2[stopword_lst] = float('inf')
+lowest_thetas_nostopwords_index = np.argsort(net_weight_copy2)[:10]
+lowest_thetas_nostopwords = [word_list[i] for i in lowest_thetas_nostopwords_index]
+print "Lowest 10 thetas index corresponding word: "
+for i in lowest_thetas_nostopwords_index:
+    print 'Word: ', word_list[i], '\t theta value: ', net_weight[i] 
+
+highest_overlap = set(highest_thetas_nostopwords) & (set(modified_highest_real) | set(modified_lowest_fake))
+lowest_overlap = set(lowest_thetas_nostopwords) & (set(modified_lowest_real) | set(modified_highest_fake))
+
+print "Overlap {} words for highest: {}".format(len(highest_overlap), str(highest_overlap))
+print "Overlap {} words for lowest: {}".format(len(lowest_overlap), str(lowest_overlap))
+
+# =============================== Part 7a =====================================
+# train_x, valid_x and test_x is from part 4
+i = 33
+clf = tree.DecisionTreeClassifier(criterion='gini', splitter='best',
+                                  max_depth=i, min_samples_split=2,
+                                  min_samples_leaf=1,
+                                  min_weight_fraction_leaf=0.0, max_features=317, 
+                                  random_state=0, max_leaf_nodes=None, 
+                                  min_impurity_decrease=0.0, min_impurity_split=None,
+                                  class_weight=None, presort=False)
+clf = clf.fit(train_x, train_y)
+print "max_dept: {}, max_features: {}".format(i, 317)
+predict_train_y = clf.predict(train_x)
+print "Performance on Train is: ", np.mean(predict_train_y == train_y)
+predict_valid_y = clf.predict(valid_x)
+print "Performance on Valid is: ", np.mean(predict_valid_y == valid_y)
+predict_test_y = clf.predict(test_x)
+print "Performance on Test is: ", np.mean(predict_test_y == test_y)
+print "========================= "
+filename = 'test_complete'
+dot_data = tree.export_graphviz(clf, out_file='report/'+ filename +'.dot',
+                                max_depth=None, feature_names=word_list, 
+                                class_names=['fake', 'real'])
+# Just make it easy to copy the command to shell
+print 'dot -Tpng '+filename+'.dot'+' -o '+filename+'.png'
+
+# =============================== Part 7b =====================================
+tree_file = open('report/test_complete.dot')
+count = 0
+top_words = []
+for line in tree_file:
+    if 'label' in line:
+        m1 = re.search('label="', line)
+        m2 = re.search(r' <= 0.5\\ngini', line)
+        if m2 is not None:
+            w = line[m1.end(): m2.start()]
+            top_words.append(w)
+        count += 1
+    if count > 200:
+        break
+tree_file.close()
+overlap_with_thetas = set(top_words) & \
+                      (set(highest_thetas) | 
+                       set(lowest_thetas))
+print "Top words in decision tree and thetas words has the following overlapping:"
+print len(overlap_with_thetas), "words are overlapped, they are: "
+print overlap_with_thetas
+
+overlap_with_bayes = set(top_words) & \
+                    (set(highest_real)|set(lowest_real)|set(highest_fake)|
+                            set(lowest_fake))
+print "Top words in decision tree and top bayes words has the following overlapping:"
+print len(overlap_with_thetas), "words are overlapped, they are: "
+print overlap_with_bayes
