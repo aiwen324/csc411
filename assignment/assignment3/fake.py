@@ -489,3 +489,38 @@ overlap_with_bayes = set(top_words) & \
 print "Top words in decision tree and top bayes words has the following overlapping:"
 print len(overlap_with_thetas), "words are overlapped, they are: "
 print overlap_with_bayes
+
+# =============================== Part 8 ======================================
+def calculate_mutual_information(top, left, right):
+    P_Y = np.true_divide(top[1], top[0]+top[1])
+    P_not_Y = 1 - P_Y
+    # P(x_i=0)
+    P_left = np.true_divide(left[0]+left[1], left[0]+left[1]+right[0]+right[1])
+    # P(x_i=1)
+    P_right = 1 - P_left
+    # P(Y=real|x_i=0)
+    P_Y_gv_left = np.true_divide(left[1], left[0]+left[1])
+    # P(Y=fake|x_i=0)
+    P_not_Y_gv_left = 1 - P_Y_gv_left
+    # P(Y=real|x_i=1)
+    P_Y_gv_right = np.true_divide(right[1], right[0]+right[1])
+    # P(Y=fake|x_i=1)
+    P_not_Y_gv_right = 1 - P_Y_gv_right
+    # H(Y|x_i=0)
+    if P_Y_gv_left == 1 or P_Y_gv_left == 0:
+        H_Y_gv_left = 0
+    else:
+        H_Y_gv_left = -(P_Y_gv_left*np.log2(P_Y_gv_left)+P_not_Y_gv_left*np.log2(P_not_Y_gv_left))
+    # H(Y|x_i=1)
+    if P_Y_gv_right == 1 or P_Y_gv_right == 0:
+        H_Y_gv_right = 0
+    else:
+        H_Y_gv_right = -(P_Y_gv_right*np.log2(P_Y_gv_right)+P_not_Y_gv_right*np.log2(P_not_Y_gv_right))
+    # H(Y)
+    if P_Y == 0 or P_Y == 1:
+        H_Y = 0
+    else:
+        H_Y = -(P_Y*np.log2(P_Y)+P_not_Y*np.log2(P_not_Y))
+    # H(Y|x_i)
+    H_Y_gv_X = P_left*H_Y_gv_left + P_right*H_Y_gv_right
+    return H_Y - H_Y_gv_X
