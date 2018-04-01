@@ -10,6 +10,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 import torch.distributions
 from torch.autograd import Variable
+import matplotlib.pyplot as plt
 
 class Environment(object):
     """
@@ -108,9 +109,10 @@ class Policy(nn.Module):
         self.W2 = nn.Linear(hidden_size, output_size)
 
     def forward(self, x):
-        h = nn.ReLU(self.W1(x))
-        o = self.W2(h)
-        output = nn.Softmax(o)
+        h = nn.ReLU().forward(self.W1(x))
+        o = self.W2.forward(h)
+        # print o.size()
+        output = nn.Softmax().forward(o)
         return output
 
 def select_action(policy, state):
@@ -166,10 +168,10 @@ def get_reward(status):
     """Returns a numeric given an environment status."""
     return {
             Environment.STATUS_VALID_MOVE  : 1, # TODO
-            Environment.STATUS_INVALID_MOVE: -10,
-            Environment.STATUS_WIN         : 10,
-            Environment.STATUS_TIE         : 3,
-            Environment.STATUS_LOSE        : -5
+            Environment.STATUS_INVALID_MOVE: -2000,
+            Environment.STATUS_WIN         : 1000,
+            Environment.STATUS_TIE         : 20,
+            Environment.STATUS_LOSE        : -1000
     }[status]
 
 def train(policy, env, gamma=1.0, log_interval=1000):
@@ -178,6 +180,7 @@ def train(policy, env, gamma=1.0, log_interval=1000):
     scheduler = torch.optim.lr_scheduler.StepLR(
             optimizer, step_size=10000, gamma=0.9)
     running_reward = 0
+    highest_reward = (0, 0)
 
     for i_episode in count(1):
         saved_rewards = []
@@ -200,6 +203,9 @@ def train(policy, env, gamma=1.0, log_interval=1000):
             print('Episode {}\tAverage return: {:.2f}'.format(
                 i_episode,
                 running_reward / log_interval))
+            if (running_reward / log_interval) > highest_reward[1]:
+                highest_reward = (i_episode, running_reward / log_interval)
+                print('update highest_reward: ', highest_reward)
             running_reward = 0
 
         if i_episode % (log_interval) == 0:
@@ -228,16 +234,101 @@ def load_weights(policy, episode):
 
 
 if __name__ == '__main__':
-    # import sys
-    # policy = Policy()
-    # env = Environment()
+    import sys
+    policy = Policy(hidden_size=64)
+    env = Environment()
 
-    # if len(sys.argv) == 1:
-    #     # `python tictactoe.py` to train the agent
-    #     train(policy, env)
-    # else:
-    #     # `python tictactoe.py <ep>` to print the first move distribution
-    #     # using weightt checkpoint at episode int(<ep>)
-    #     ep = int(sys.argv[1])
-    #     load_weights(policy, ep)
-    #     print(first_move_distr(policy, env))
+    if len(sys.argv) == 1:
+        # `python tictactoe.py` to train the agent
+        train(policy, env, gamma=0.9)
+    else:
+        # `python tictactoe.py <ep>` to print the first move distribution
+        # using weightt checkpoint at episode int(<ep>)
+        x_s = []
+        empty_stack = np.empty((0, 9), dtype=float)
+        # policy = Policy(hidden_size=64)
+        for i in range(1, 51):
+            env.reset()
+            ep = i*1000
+            x_s.append(ep)
+            load_weights(policy, ep)
+            # print("Episode: ", ep)
+            # print(first_move_distr(policy, env))
+            prob_dist = first_move_distr(policy, env).numpy()
+            empty_stack = np.vstack((empty_stack, prob_dist))
+        for i, c in zip([0,1,2,3,4],['r','g','b','c','m']):
+            plt.plot(x_s, empty_stack[:, i], c, label='position: '+str(i))
+        plt.legend()
+        plt.savefig('report/part7_first5.png')
+        plt.show()
+        for i, c in zip([5,6,7,8],['r','g','b','y']):
+            plt.plot(x_s, empty_stack[:, i], c, label='position: '+str(i))
+        plt.legend()
+        plt.savefig('report/part7_last4.png')
+        plt.show()
+        
+            
+# ====================== Part 5d ============================
+ep = 50000
+load_weights(policy, ep)
+win_count = 0
+tie_count = 0
+lose_count = 0
+for i in range(5):
+    state = env.reset()
+    while not env.done:
+        act, logprob = select_action(policy, state)
+        state, status, done = env.play_against_random(act)
+        if i < 5:
+            env.render()
+        if status == env.STATUS_WIN:
+            win_count += 1
+            print('Agent Win!')
+        elif status == env.STATUS_TIE:
+            tie_count += 1
+            print('Tie')
+        elif status == env.STATUS_LOSE:
+            lose_count += 1
+            print('Agent Lose')
+print(win_count)
+print(lose_count)
+print(tie_count)
+
+# ====================== Part 6 ============================
+x_s = []
+win_rates = []
+tie_rates = []
+lose_rates = []
+for i in range(1, 51):
+    ep = i*1000
+    load_weights(policy, ep)
+    win_count = 0
+    tie_count = 0
+    lose_count = 0
+    for i in range(1000):
+        state = env.reset()
+        while not env.done:
+            act, logprob = select_action(policy, state)
+            state, status, done = env.play_against_random(act)
+            if status == env.STATUS_WIN:
+                win_count += 1
+            elif status == env.STATUS_TIE:
+                tie_count += 1
+            elif status == env.STATUS_LOSE:
+                lose_count += 1
+    win_rate = np.true_divide(win_count, 1000)
+    tie_rate = np.true_divide(tie_count, 1000)
+    lose_rate = np.true_divide(lose_count, 1000)
+    print('episode {}, performance is win_rate: {}, tie_rate: {}, lose_rate: {}'.format(
+            ep, str(win_rate), str(tie_rate), str(lose_rate)))
+    x_s.append(ep)
+    win_rates.append(win_rate)
+    tie_rates.append(tie_rate)
+    lose_rates.append(lose_rate)
+
+plt.plot(x_s, win_rates, 'r', label='win_rate')
+plt.plot(x_s, tie_rates, 'g', label='tie_rate')
+plt.plot(x_s, lose_rates, 'b', label='lose_rate')
+plt.legend()
+plt.savefig('report/part6.png')
+plt.show()
