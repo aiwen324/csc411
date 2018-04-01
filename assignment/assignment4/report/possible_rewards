@@ -1,0 +1,16 @@
+return {
+            Environment.STATUS_VALID_MOVE  : 1, # TODO
+            Environment.STATUS_INVALID_MOVE: -1000,
+            Environment.STATUS_WIN         : 1000,
+            Environment.STATUS_TIE         : -20,
+            Environment.STATUS_LOSE        : -1000
+    }[status]
+
+
+return {
+            Environment.STATUS_VALID_MOVE  : 1, # TODO
+            Environment.STATUS_INVALID_MOVE: -2000,
+            Environment.STATUS_WIN         : 1000,
+            Environment.STATUS_TIE         : 20,
+            Environment.STATUS_LOSE        : -1000
+    }[status]

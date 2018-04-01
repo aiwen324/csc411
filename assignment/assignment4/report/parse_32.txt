@@ -1,0 +1,78 @@
+Episode 1000	Average return: -8942.75
+Episode 2000	Average return: -3017.81
+Episode 3000	Average return: -889.90
+Episode 4000	Average return: -68.80
+Episode 5000	Average return: 421.53
+update highest_reward:  (5000, 421.528)
+Episode 6000	Average return: 290.44
+Episode 7000	Average return: 388.84
+Episode 8000	Average return: 558.97
+update highest_reward:  (8000, 558.97)
+Episode 9000	Average return: 474.06
+Episode 10000	Average return: 539.54
+Episode 11000	Average return: 510.50
+Episode 12000	Average return: 557.81
+Episode 13000	Average return: 563.80
+update highest_reward:  (13000, 563.798)
+Episode 14000	Average return: 601.47
+update highest_reward:  (14000, 601.465)
+Episode 15000	Average return: 624.38
+update highest_reward:  (15000, 624.375)
+Episode 16000	Average return: 796.96
+update highest_reward:  (16000, 796.958)
+Episode 17000	Average return: 765.97
+Episode 18000	Average return: 840.69
+update highest_reward:  (18000, 840.686)
+Episode 19000	Average return: 871.62
+update highest_reward:  (19000, 871.625)
+Episode 20000	Average return: 539.03
+Episode 21000	Average return: 840.87
+Episode 22000	Average return: 905.55
+update highest_reward:  (22000, 905.551)
+Episode 23000	Average return: 882.65
+Episode 24000	Average return: 888.67
+Episode 25000	Average return: 871.62
+Episode 26000	Average return: 908.54
+update highest_reward:  (26000, 908.543)
+Episode 27000	Average return: 886.64
+Episode 28000	Average return: 886.70
+Episode 29000	Average return: 919.59
+update highest_reward:  (29000, 919.586)
+Episode 30000	Average return: 900.63
+Episode 31000	Average return: 898.62
+Episode 32000	Average return: 474.24
+Episode 33000	Average return: 439.26
+Episode 34000	Average return: 761.37
+Episode 35000	Average return: 745.18
+Episode 36000	Average return: 828.07
+Episode 37000	Average return: 763.38
+Episode 38000	Average return: 794.87
+Episode 39000	Average return: 828.18
+Episode 40000	Average return: 813.18
+Episode 41000	Average return: 781.31
+Episode 42000	Average return: 799.17
+Episode 43000	Average return: 820.03
+Episode 44000	Average return: 777.15
+Episode 45000	Average return: 833.14
+Episode 46000	Average return: 770.01
+Episode 47000	Average return: 854.83
+Episode 48000	Average return: 809.78
+Episode 49000	Average return: 834.02
+Episode 50000	Average return: 888.52
+Episode 51000	Average return: 904.60
+Episode 52000	Average return: -23273.27
+Episode 53000	Average return: -1182.33
+Episode 54000	Average return: 833.16
+Episode 55000	Average return: 878.95
+Episode 56000	Average return: 118.58
+Episode 57000	Average return: 794.13
+Episode 58000	Average return: 862.10
+Episode 59000	Average return: 891.85
+Episode 60000	Average return: 912.85
+Episode 61000	Average return: 912.73
+Episode 62000	Average return: 907.64
+Episode 63000	Average return: 915.47
+Episode 64000	Average return: 908.66
+Episode 65000	Average return: 892.67
+Episode 66000	Average return: 897.81
+Episode 67000	Average return: 913.63
